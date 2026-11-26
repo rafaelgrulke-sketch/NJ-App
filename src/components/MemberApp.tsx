@@ -22,6 +22,7 @@ import { useChurch } from '../context/ChurchContext';
 import { EnvironmentMode } from '../types/church';
 import { BrandLogoMark } from './EditorialArt';
 import { PWAInstallButton, ThemeToggleButton } from './PWAInstallButton';
+import { AdminLoginModal } from './ui/AdminLoginModal';
 import { AboutChurchView } from './member/AboutChurchView';
 import { MinistriesHubView } from './member/MinistriesHubView';
 import {
@@ -71,6 +72,7 @@ export const MemberApp: React.FC<{
   const initial = resolveInitialTab(initialTab);
   const [activeTab, setActiveTab] = useState<MemberTab>(initial.tab);
   const [ministrySubMode, setMinistrySubMode] = useState<'central' | 'minhas'>(initial.subMode);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const {
     churchInfo,
     currentMemberName,
@@ -78,7 +80,9 @@ export const MemberApp: React.FC<{
     authUser,
     authLoading,
     realRole,
-    signInWithGoogle,
+    hasScheduleAccess,
+    dataLoading,
+    dataError,
     signOutUser,
   } = useChurch();
 
@@ -109,7 +113,7 @@ export const MemberApp: React.FC<{
   }[] = [
     { id: 'inicio', label: 'Início', icon: Home },
     { id: 'agenda', label: 'Programação', icon: Calendar },
-    { id: 'ministerios', label: 'Central de Ministérios', icon: Users },
+    ...(hasScheduleAccess ? [{ id: 'ministerios' as MemberTab, label: 'Minhas Escalas', icon: Users }] : []),
     { id: 'ebd', label: 'EBD Digital', icon: BookOpen },
     { id: 'musica', label: 'Min. Nova Jerusalém', icon: Music },
     { id: 'igreja', label: 'Conheça Nossa Igreja', icon: Church },
@@ -127,9 +131,19 @@ export const MemberApp: React.FC<{
   }[] = [
     { id: 'inicio', label: 'Início', icon: Home },
     { id: 'agenda', label: 'Programação', icon: Calendar },
-    { id: 'ministerios', label: 'Ministérios', icon: Users },
+    hasScheduleAccess
+      ? { id: 'ministerios', label: 'Escalas', icon: Users }
+      : { id: 'musica', label: 'Min. NJ', icon: Music },
     { id: 'ebd', label: 'EBD', icon: BookOpen },
     { id: 'mais', label: 'Mais', icon: LayoutGrid },
+  ];
+
+  const topNavItems: { label: string; tab: MemberTab }[] = [
+    { label: 'Início', tab: 'inicio' },
+    { label: 'Programação', tab: 'agenda' },
+    ...(hasScheduleAccess ? [{ label: 'Escalas', tab: 'ministerios' as MemberTab }] : []),
+    { label: 'EBD Digital', tab: 'ebd' },
+    { label: 'Min. Nova Jerusalém', tab: 'musica' },
   ];
 
   return (
@@ -154,13 +168,7 @@ export const MemberApp: React.FC<{
           </button>
 
           <nav aria-label="Navegação rápida do aplicativo" className="hidden items-center gap-8 md:flex">
-            {[
-              { label: 'Início', tab: 'inicio' as MemberTab },
-              { label: 'Programação', tab: 'agenda' as MemberTab },
-              { label: 'Ministérios', tab: 'ministerios' as MemberTab },
-              { label: 'EBD Digital', tab: 'ebd' as MemberTab },
-              { label: 'Min. Nova Jerusalém', tab: 'musica' as MemberTab },
-            ].map((item) => (
+            {topNavItems.map((item) => (
               <button
                 key={item.tab}
                 type="button"
@@ -216,12 +224,12 @@ export const MemberApp: React.FC<{
               ) : (
                 <button
                   type="button"
-                  onClick={() => void signInWithGoogle()}
+                  onClick={() => setShowLoginModal(true)}
                   disabled={authLoading}
                   className="nj-btn-primary inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs"
                 >
                   <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
-                  {authLoading ? 'Entrando...' : 'Entrar com Google'}
+                  {authLoading ? 'Entrando...' : 'Entrar / Login'}
                 </button>
               )}
             </div>
@@ -280,10 +288,27 @@ export const MemberApp: React.FC<{
 
         {/* Active View */}
         <main className="min-w-0 flex-1">
+          {dataLoading && (
+            <div className="mb-4 rounded-lg border border-[var(--nj-border)] bg-[var(--nj-surface-alt)] px-4 py-2.5 text-xs text-[var(--nj-ink-muted)]">
+              Sincronizando dados em tempo real com o Firebase...
+            </div>
+          )}
+          {dataError && (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-xs text-[var(--nj-ink)]"
+            >
+              {dataError}
+            </div>
+          )}
           {activeTab === 'inicio' && <MemberHomeView onNavigate={(t) => navigate(t)} />}
           {activeTab === 'agenda' && <AgendaInformativoView />}
           {activeTab === 'ministerios' && (
-            <MinistriesHubView key={ministrySubMode} initialSubMode={ministrySubMode} />
+            <MinistriesHubView
+              key={ministrySubMode}
+              initialSubMode={ministrySubMode}
+              onRequestLogin={() => setShowLoginModal(true)}
+            />
           )}
           {activeTab === 'ebd' && <EbdDigitalView />}
           {activeTab === 'musica' && <MusicMinistryView />}
@@ -330,12 +355,12 @@ export const MemberApp: React.FC<{
                 ) : (
                   <button
                     type="button"
-                    onClick={() => void signInWithGoogle()}
+                    onClick={() => setShowLoginModal(true)}
                     disabled={authLoading}
                     className="nj-btn-primary inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs"
                   >
                     <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
-                    {authLoading ? 'Entrando...' : 'Entrar com Google'}
+                    {authLoading ? 'Entrando...' : 'Entrar / Login'}
                   </button>
                 )}
               </div>
@@ -354,12 +379,16 @@ export const MemberApp: React.FC<{
                     icon: Church,
                     onClick: () => navigate('igreja'),
                   },
-                  {
-                    title: 'Minhas Escalas',
-                    desc: 'Confirmar participação, solicitar troca e marcar indisponibilidade',
-                    icon: Compass,
-                    onClick: () => navigate('ministerios', 'minhas'),
-                  },
+                  ...(hasScheduleAccess
+                    ? [
+                        {
+                          title: 'Minhas Escalas',
+                          desc: 'Confirmar participação, solicitar troca e marcar indisponibilidade',
+                          icon: Compass,
+                          onClick: () => navigate('ministerios', 'minhas'),
+                        },
+                      ]
+                    : []),
                   {
                     title: 'Transmissões',
                     desc: 'Cultos ao vivo e mensagens no YouTube oficial',
@@ -438,10 +467,10 @@ export const MemberApp: React.FC<{
         <div className="grid h-14 grid-cols-5">
           {mobileTabs.map((item) => {
             const Icon = item.icon;
+            const primaryIds = mobileTabs.filter((t) => t.id !== 'mais').map((t) => t.id);
             const isActive =
               activeTab === item.id ||
-              (item.id === 'mais' &&
-                !['inicio', 'agenda', 'ministerios', 'ebd'].includes(activeTab));
+              (item.id === 'mais' && !primaryIds.includes(activeTab));
             return (
               <button
                 key={item.id}
@@ -458,6 +487,13 @@ export const MemberApp: React.FC<{
           })}
         </div>
       </nav>
+
+      <AdminLoginModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title="Entrar no NJ App"
+        subtitle="Voluntários e administradores podem acessar com e-mail/senha ou conta Google."
+      />
     </div>
   );
 };

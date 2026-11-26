@@ -66,6 +66,7 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
     discography,
     ministries,
     schedules,
+    hasScheduleAccess,
     videos,
     notifications,
     notify,
@@ -159,24 +160,26 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
             </ul>
           </div>
 
-          <div className="nj-card-olive flex items-center justify-between gap-4 p-5">
-            <div>
-              <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-                Minhas Escalas
-              </p>
-              <p className="mt-1 text-sm font-medium text-[var(--nj-ink)]">
-                {myUpcomingSchedules.length} escala(s) atribuída(s)
-                {pendingCount > 0 ? ` · ${pendingCount} aguardando confirmação` : ''}
-              </p>
+          {hasScheduleAccess && (
+            <div className="nj-card-olive flex items-center justify-between gap-4 p-5">
+              <div>
+                <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
+                  Minhas Escalas
+                </p>
+                <p className="mt-1 text-sm font-medium text-[var(--nj-ink)]">
+                  {myUpcomingSchedules.length} escala(s) atribuída(s)
+                  {pendingCount > 0 ? ` · ${pendingCount} aguardando confirmação` : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('ministerios')}
+                className="nj-btn-secondary shrink-0 rounded-md px-3.5 py-2 text-xs"
+              >
+                Ver escalas
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigate('ministerios')}
-              className="nj-btn-secondary shrink-0 rounded-md px-3.5 py-2 text-xs"
-            >
-              Ver escalas
-            </button>
-          </div>
+          )}
         </div>
       </section>
 
@@ -221,28 +224,29 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
         </section>
       )}
 
-      {/* Quick Access to the 5 Ministries */}
-      <section>
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-              Central de Ministérios
-            </p>
-            <h2 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
-              Equipes e escalas independentes
-            </h2>
+      {/* Quick Access to Authorized Ministries Only */}
+      {hasScheduleAccess && ministries.length > 0 && (
+        <section>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
+                Meus Ministérios
+              </p>
+              <h2 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
+                Equipes e escalas liberadas para você
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('ministerios')}
+              className="text-xs font-medium text-[var(--nj-accent-text)] hover:underline"
+            >
+              Abrir escalas →
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('ministerios')}
-            className="text-xs font-medium text-[var(--nj-accent-text)] hover:underline"
-          >
-            Abrir Central completa →
-          </button>
-        </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {ministries.slice(0, 5).map((min) => {
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {ministries.slice(0, 5).map((min) => {
             const count = schedules.filter((s) => s.ministryId === min.id).length;
             return (
               <button
@@ -263,8 +267,9 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
               </button>
             );
           })}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* Announcements + Broadcast + Music Release */}
       <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">

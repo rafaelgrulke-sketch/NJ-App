@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Archive,
@@ -11,9 +11,11 @@ import {
   History,
   Image as ImageIcon,
   LayoutDashboard,
+  Loader2,
   Lock,
   LogIn,
   LogOut,
+  Mail,
   Megaphone,
   Music,
   Plus,
@@ -21,7 +23,9 @@ import {
   ShieldCheck,
   Trash2,
   Users,
+  Video,
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import { useChurch } from '../context/ChurchContext';
 import {
   AccessProfile,
@@ -76,8 +80,16 @@ export const AdminPanel: React.FC<{
   onSwitchEnvironment: (mode: EnvironmentMode, tab?: string) => void;
 }> = ({ onSwitchEnvironment }) => {
   const {
+    loginWithEmail,
+    resendVerificationEmail,
+    authError,
+    clearAuthError,
+  } = useAuth();
+
+  const {
     churchInfo,
     weeklyInformativo,
+    videos,
     events,
     registrations,
     announcements,
@@ -92,15 +104,22 @@ export const AdminPanel: React.FC<{
     authUser,
     authReady,
     authLoading,
+    dataLoading,
+    dataError,
     realRole,
     accessProfile,
     setAccessProfile,
+    canManageSchedules,
+    canManageVideos,
     signInWithGoogle,
     signOutUser,
     usersList,
     updateUserRole,
+    updateUserMinistries,
     updateChurchInfo,
     updateWeeklyInformativo,
+    addBroadcastVideo,
+    deleteBroadcastVideo,
     addWeeklyService,
     deleteWeeklyService,
     addEvent,
@@ -117,6 +136,7 @@ export const AdminPanel: React.FC<{
     removeSongFromRepertoire,
     addMinistryUnit,
     addScheduleSlot,
+    deleteScheduleSlot,
     resolveScheduleSwap,
     duplicateEventSchedules,
     updatePrayerStatus,
@@ -124,6 +144,18 @@ export const AdminPanel: React.FC<{
   } = useChurch();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('visao');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
+  const [newVideoForm, setNewVideoForm] = useState({
+    title: '',
+    youtubeUrl: '',
+    preacher: 'Pr. Maurício Souza',
+    series: 'Culto de Celebração',
+    date: new Date().toISOString().slice(0, 10),
+    duration: '01:20:00',
+    description: '',
+  });
 
   // Institutional form state
   const [instForm, setInstForm] = useState({
@@ -245,6 +277,25 @@ export const AdminPanel: React.FC<{
 
   const allowedTabs = PROFILE_PERMISSIONS[accessProfile];
   const isReadOnlyProfile = accessProfile === 'voluntario' || accessProfile === 'membro' || accessProfile === 'visitante';
+
+  useEffect(() => {
+    if (ministries.length > 0 && !ministries.some((m) => m.id === schMinistryId)) {
+      const first = ministries[0];
+      setSchMinistryId(first.id);
+      if (first.departments?.length) {
+        setSchDeptId(first.departments[0].id);
+        setSchPosition(first.departments[0].positions[0]?.name || '');
+      } else {
+        setSchPosition(first.positions[0]?.name || '');
+      }
+    }
+  }, [ministries, schMinistryId]);
+
+  useEffect(() => {
+    if (repertoires.length > 0 && !repertoires.some((r) => r.id === repId)) {
+      setRepId(repertoires[0].id);
+    }
+  }, [repertoires, repId]);
 
   const selectedMinistryObj = useMemo(
     () => ministries.find((m) => m.id === schMinistryId) || ministries[0],
@@ -465,31 +516,98 @@ export const AdminPanel: React.FC<{
 
   if (!authUser) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--nj-canvas)] px-4 text-[var(--nj-ink)]">
-        <div className="nj-card w-full max-w-md space-y-5 p-8 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
-            <Lock className="h-7 w-7" aria-hidden="true" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold tracking-widest uppercase text-[var(--nj-accent-text)]">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--nj-canvas)] px-4 py-10 text-[var(--nj-ink)]">
+        <div className="nj-card w-full max-w-md space-y-5 p-8">
+          <div className="text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
+              <Lock className="h-7 w-7" aria-hidden="true" />
+            </div>
+            <p className="mt-4 text-xs font-semibold tracking-widest uppercase text-[var(--nj-accent-text)]">
               Acesso Restrito · Segurança RBAC
             </p>
             <h1 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
               Painel Administrativo
             </h1>
-            <p className="mt-2 text-sm text-[var(--nj-ink-muted)]">
-              Faça login com sua conta Google autorizada pela igreja para gerenciar programação, escalas, EBD e o catálogo oficial.
+            <p className="mt-2 text-xs leading-relaxed text-[var(--nj-ink-muted)]">
+              Entre com seu e-mail e senha de administrador ou com sua conta Google autorizada pela igreja para gerenciar programação, escalas e vídeos.
             </p>
           </div>
+
+          {authError && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-300">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              clearAuthError();
+              await loginWithEmail(loginEmail, loginPassword);
+            }}
+            className="space-y-3"
+          >
+            <div>
+              <label htmlFor="admin-gate-email" className="block text-xs font-medium text-[var(--nj-ink-muted)]">
+                E-mail
+              </label>
+              <input
+                id="admin-gate-email"
+                type="email"
+                required
+                autoComplete="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="lideranca@igrejabatistanj.com.br"
+                className="nj-input mt-1 w-full rounded-lg px-3.5 py-2.5 text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="admin-gate-password" className="block text-xs font-medium text-[var(--nj-ink-muted)]">
+                Senha
+              </label>
+              <input
+                id="admin-gate-password"
+                type="password"
+                required
+                autoComplete="current-password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Sua senha administrativa"
+                className="nj-input mt-1 w-full rounded-lg px-3.5 py-2.5 text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="nj-btn-primary inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
+            >
+              {authLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <LogIn className="h-4 w-4" aria-hidden="true" />
+              )}
+              {authLoading ? 'Autenticando...' : 'Entrar com E-mail e Senha'}
+            </button>
+          </form>
+
+          <div className="relative flex items-center py-0.5">
+            <div className="flex-grow border-t border-[var(--nj-border)]" />
+            <span className="mx-3 text-[11px] text-[var(--nj-ink-subtle)]">ou</span>
+            <div className="flex-grow border-t border-[var(--nj-border)]" />
+          </div>
+
           <button
             type="button"
             onClick={() => void signInWithGoogle()}
             disabled={authLoading}
-            className="nj-btn-primary inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold"
+            className="nj-btn-secondary inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-60"
           >
             <LogIn className="h-4 w-4" aria-hidden="true" />
-            {authLoading ? 'Conectando...' : 'Entrar com Google'}
+            Entrar com Google
           </button>
+
           <div className="flex items-center justify-center gap-4 pt-2 text-xs">
             <button
               type="button"
@@ -648,11 +766,58 @@ export const AdminPanel: React.FC<{
 
         {/* Content */}
         <main className="min-w-0 flex-1 space-y-6">
+          {dataLoading && (
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--nj-border)] bg-[var(--nj-surface)] px-4 py-2.5 text-xs text-[var(--nj-ink-muted)]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--nj-accent-text)]" aria-hidden="true" />
+              Sincronizando dados em tempo real com o Firebase Firestore...
+            </div>
+          )}
+
+          {dataError && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-700 dark:text-red-300">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{dataError}</span>
+            </div>
+          )}
+
+          {authUser && !authUser.emailVerified && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-[var(--nj-ink)]">
+              <div className="flex items-start gap-2.5">
+                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold">Verifique seu e-mail para liberar gravações administrativas</p>
+                  <p className="mt-0.5 text-[var(--nj-ink-muted)]">
+                    As regras de segurança do Firebase exigem e-mail verificado para criar, editar ou excluir escalas e vídeos.
+                  </p>
+                  {verificationNotice && (
+                    <p className="mt-1 font-medium text-[var(--nj-accent-text)]">{verificationNotice}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await resendVerificationEmail();
+                    setVerificationNotice('E-mail de verificação enviado! Confirme e recarregue a página.');
+                  } catch (err) {
+                    setVerificationNotice(
+                      err instanceof Error ? err.message : 'Não foi possível enviar o e-mail de verificação.'
+                    );
+                  }
+                }}
+                className="nj-btn-secondary shrink-0 rounded-md px-3 py-1.5 text-xs font-medium"
+              >
+                Reenviar verificação
+              </button>
+            </div>
+          )}
+
           {isReadOnlyProfile && (
             <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-xs text-[var(--nj-ink)]">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
               <p>
-                O perfil <strong>{PROFILE_LABELS[accessProfile]}</strong> possui acesso restrito no Painel Administrativo. Altere o seletor acima para <strong>Superadministrador</strong>, <strong>Pastoral</strong>, <strong>Coordenador da EBD</strong> ou <strong>Líder de Ministério</strong> para editar os módulos.
+                O perfil <strong>{PROFILE_LABELS[accessProfile]}</strong> possui acesso restrito no Painel Administrativo. Somente contas autorizadas (Superadministrador, Pastoral, Coordenador da EBD ou Líder de Ministério) podem editar módulos.
               </p>
             </div>
           )}
@@ -1240,20 +1405,39 @@ export const AdminPanel: React.FC<{
                   Escalas registradas ({schedules.length})
                 </h2>
                 <div className="mt-3 divide-y divide-[var(--nj-border)] text-xs">
-                  {schedules.slice(0, 14).map((s) => (
-                    <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                      <div>
-                        <span className="font-semibold text-[var(--nj-ink)]">{s.volunteerName}</span> · {s.positionName}{' '}
-                        ({s.departmentName || s.ministryName})
-                        <p className="text-[var(--nj-ink-subtle)]">
-                          {s.eventTitle} · {formatDatePtBR(s.date)} · {s.time}
-                        </p>
+                  {schedules.length === 0 ? (
+                    <p className="py-4 text-[var(--nj-ink-muted)]">
+                      Nenhuma vaga registrada ainda para os ministérios sob sua liderança.
+                    </p>
+                  ) : (
+                    schedules.slice(0, 20).map((s) => (
+                      <div key={s.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                        <div>
+                          <span className="font-semibold text-[var(--nj-ink)]">{s.volunteerName}</span> · {s.positionName}{' '}
+                          ({s.departmentName || s.ministryName})
+                          <p className="text-[var(--nj-ink-subtle)]">
+                            {s.eventTitle} · {formatDatePtBR(s.date)} · {s.time}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-[var(--nj-accent-text)]">
+                            {volunteerStatusLabel(s.volunteerStatus)}
+                          </span>
+                          {canManageSchedules && (
+                            <button
+                              type="button"
+                              onClick={() => void deleteScheduleSlot(s.id)}
+                              className="rounded p-1.5 text-[var(--nj-ink-subtle)] transition hover:bg-red-500/10 hover:text-red-500"
+                              aria-label={`Excluir escala de ${s.volunteerName}`}
+                              title="Excluir vaga da escala"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <span className="font-medium text-[var(--nj-accent-text)]">
-                        {volunteerStatusLabel(s.volunteerStatus)}
-                      </span>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -1380,10 +1564,137 @@ export const AdminPanel: React.FC<{
                   className="nj-input"
                 />
 
-                <button type="submit" className="nj-btn-primary rounded-lg px-4 py-2.5 text-xs">
+                <button
+                  type="submit"
+                  disabled={!canManageVideos}
+                  className="nj-btn-primary rounded-lg px-4 py-2.5 text-xs disabled:opacity-50"
+                >
                   Publicar vídeo na aba Programação
                 </button>
               </form>
+
+              {/* Broadcast Videos (YouTube) CRUD */}
+              <section className="nj-card space-y-4 p-6">
+                <div className="flex items-center gap-2">
+                  <Video className="h-5 w-5 text-[var(--nj-accent-text)]" aria-hidden="true" />
+                  <div>
+                    <h2 className="font-display text-xl font-semibold text-[var(--nj-ink)]">
+                      Vídeos Informativos e Transmissões ({videos.length})
+                    </h2>
+                    <p className="text-xs text-[var(--nj-ink-muted)]">
+                      Vídeos exibidos publicamente no Site e no NJ App. Somente administradores autenticados podem adicionar ou excluir.
+                    </p>
+                  </div>
+                </div>
+
+                {canManageVideos && (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const ytId = extractYoutubeId(newVideoForm.youtubeUrl);
+                      if (!newVideoForm.title.trim() || !ytId) return;
+                      await addBroadcastVideo({
+                        title: newVideoForm.title.trim(),
+                        youtubeId: ytId,
+                        preacher: newVideoForm.preacher.trim() || 'Igreja Batista Nova Jerusalém',
+                        series: newVideoForm.series.trim() || 'Culto de Celebração',
+                        date: newVideoForm.date,
+                        duration: newVideoForm.duration.trim() || '01:00:00',
+                        description:
+                          newVideoForm.description.trim() ||
+                          'Transmissão oficial da Igreja Batista Nova Jerusalém Sampaio.',
+                      });
+                      setNewVideoForm({
+                        title: '',
+                        youtubeUrl: '',
+                        preacher: 'Pr. Maurício Souza',
+                        series: 'Culto de Celebração',
+                        date: new Date().toISOString().slice(0, 10),
+                        duration: '01:20:00',
+                        description: '',
+                      });
+                    }}
+                    className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                  >
+                    <input
+                      type="text"
+                      required
+                      value={newVideoForm.title}
+                      onChange={(e) => setNewVideoForm((prev) => ({ ...prev, title: e.target.value }))}
+                      placeholder="Título do vídeo *"
+                      className="nj-input sm:col-span-2"
+                    />
+                    <input
+                      type="text"
+                      required
+                      value={newVideoForm.youtubeUrl}
+                      onChange={(e) => setNewVideoForm((prev) => ({ ...prev, youtubeUrl: e.target.value }))}
+                      placeholder="Link ou ID do YouTube *"
+                      className="nj-input sm:col-span-2"
+                    />
+                    <input
+                      type="text"
+                      value={newVideoForm.preacher}
+                      onChange={(e) => setNewVideoForm((prev) => ({ ...prev, preacher: e.target.value }))}
+                      placeholder="Preletor / Equipe"
+                      className="nj-input"
+                    />
+                    <input
+                      type="text"
+                      value={newVideoForm.series}
+                      onChange={(e) => setNewVideoForm((prev) => ({ ...prev, series: e.target.value }))}
+                      placeholder="Série / Categoria"
+                      className="nj-input"
+                    />
+                    <input
+                      type="date"
+                      value={newVideoForm.date}
+                      onChange={(e) => setNewVideoForm((prev) => ({ ...prev, date: e.target.value }))}
+                      className="nj-input"
+                    />
+                    <input
+                      type="text"
+                      value={newVideoForm.duration}
+                      onChange={(e) => setNewVideoForm((prev) => ({ ...prev, duration: e.target.value }))}
+                      placeholder="Duração (ex.: 01:20:00)"
+                      className="nj-input"
+                    />
+                    <input
+                      type="text"
+                      value={newVideoForm.description}
+                      onChange={(e) => setNewVideoForm((prev) => ({ ...prev, description: e.target.value }))}
+                      placeholder="Resumo opcional do vídeo"
+                      className="nj-input sm:col-span-2 lg:col-span-3"
+                    />
+                    <button type="submit" className="nj-btn-primary rounded-lg px-4 py-2 text-xs">
+                      Adicionar vídeo
+                    </button>
+                  </form>
+                )}
+
+                <div className="divide-y divide-[var(--nj-border)] border-t border-[var(--nj-border)] pt-2 text-xs">
+                  {videos.map((v) => (
+                    <div key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                      <div>
+                        <p className="font-semibold text-[var(--nj-ink)]">{v.title}</p>
+                        <p className="text-[var(--nj-ink-subtle)]">
+                          {v.series} · {v.preacher} · {formatDatePtBR(v.date)} · {v.duration}
+                        </p>
+                      </div>
+                      {canManageVideos && (
+                        <button
+                          type="button"
+                          onClick={() => void deleteBroadcastVideo(v.id)}
+                          className="rounded p-1.5 text-[var(--nj-ink-subtle)] transition hover:bg-red-500/10 hover:text-red-500"
+                          aria-label={`Excluir vídeo ${v.title}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
 
               {/* Create New Event with Artwork Upload + Live Card Preview */}
               <form onSubmit={handleCreateEvent} className="nj-card space-y-4 p-6">
@@ -1963,53 +2274,151 @@ export const AdminPanel: React.FC<{
             </div>
           )}
 
-          {/* 9. EQUIPE & PERMISSÕES (RBAC REAL NO FIRESTORE) */}
+          {/* 9. EQUIPE & PERMISSÕES (RBAC + ISOLAMENTO POR MINISTÉRIO NO FIRESTORE) */}
           {activeTab === 'equipe' && (
             <div className="space-y-6">
               <div>
                 <h1 className="font-serif text-3xl font-semibold text-[var(--nj-ink)]">
-                  Equipe & Permissões (Controle de Acesso RBAC)
+                  Equipe, Ministérios & Permissões (Segurança RBAC)
                 </h1>
                 <p className="mt-1 text-sm text-[var(--nj-ink-muted)]">
-                  Gerencie os níveis de acesso reais validados pelas regras de segurança do banco de dados. Novos cadastros entram automaticamente como Membro.
+                  Defina o nível de acesso e exatamente quais ministérios cada pessoa participa. As regras do Firestore garantem que quem é da Mídia veja apenas Mídia, quem é do Louvor veja apenas Louvor, e visitantes ou membros sem ministério não vejam nenhuma escala.
                 </p>
               </div>
               <div className="nj-card divide-y divide-[var(--nj-border)] p-6 text-xs">
                 {usersList.length === 0 ? (
                   <p className="py-4 text-center text-[var(--nj-ink-muted)]">
-                    Nenhum usuário adicional cadastrado ainda. Assim que líderes e membros entrarem com Google, eles aparecerão aqui para atribuição de função.
+                    Nenhum usuário adicional cadastrado ainda. Assim que líderes e voluntários entrarem no aplicativo, eles aparecerão aqui para vinculação ao seu ministério.
                   </p>
                 ) : (
                   usersList.map((u) => {
                     const isPrimaryOwner = u.email.toLowerCase() === 'rafaelgrulke123@gmail.com';
+                    const currentMinIds = u.ministryIds || [];
+                    const currentDeptIds = u.departmentIds || [];
+                    const hasMedia = currentMinIds.includes('min-midia');
+                    const ministryCatalog =
+                      ministries.length > 0
+                        ? ministries.map((m) => ({ id: m.id, name: m.name }))
+                        : [
+                            { id: 'min-midia', name: 'Mídia' },
+                            { id: 'min-louvor', name: 'Louvor' },
+                            { id: 'min-recepcao', name: 'Recepção' },
+                            { id: 'min-diaconia', name: 'Diaconia' },
+                            { id: 'min-infantil', name: 'Infantil' },
+                          ];
+                    const mediaSubTeams = [
+                      { id: 'dep-telao', name: 'Telão / Projeção' },
+                      { id: 'dep-transmissao', name: 'Transmissão' },
+                      { id: 'dep-social', name: 'Social Media' },
+                    ];
+
+                    const toggleMinistry = (minId: string) => {
+                      const nextMin = currentMinIds.includes(minId)
+                        ? currentMinIds.filter((id) => id !== minId)
+                        : [...currentMinIds, minId];
+                      const nextDepts = nextMin.includes('min-midia') ? currentDeptIds : [];
+                      void updateUserMinistries(u.uid, nextMin, nextDepts);
+                    };
+
+                    const toggleMediaDept = (depId: string) => {
+                      const nextDepts = currentDeptIds.includes(depId)
+                        ? currentDeptIds.filter((id) => id !== depId)
+                        : [...currentDeptIds, depId];
+                      void updateUserMinistries(u.uid, currentMinIds, nextDepts);
+                    };
+
                     return (
-                      <div key={u.uid} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                        <div>
-                          <p className="font-semibold text-[var(--nj-ink)]">{u.displayName}</p>
-                          <p className="text-[var(--nj-ink-subtle)]">{u.email}</p>
+                      <div key={u.uid} className="space-y-3 py-4 first:pt-0 last:pb-0">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-[var(--nj-ink)]">{u.displayName}</p>
+                            <p className="text-[var(--nj-ink-subtle)]">{u.email}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isPrimaryOwner ? (
+                              <span className="rounded-md bg-[var(--nj-accent-soft)] px-3 py-1.5 font-semibold text-[var(--nj-accent-text)]">
+                                Superadministrador Principal (Todos os Ministérios)
+                              </span>
+                            ) : (
+                              <select
+                                aria-label={`Perfil de acesso para ${u.displayName}`}
+                                value={u.role}
+                                onChange={(e) => void updateUserRole(u.uid, e.target.value as StoredUserRole)}
+                                className="nj-input rounded-md px-3 py-1.5 text-xs"
+                              >
+                                <option value="membro">Membro (Sem escalas)</option>
+                                <option value="voluntario">Voluntário (Apenas ministérios marcados)</option>
+                                <option value="lider_ministerio">Líder de Ministério</option>
+                                <option value="coord_ebd">Coordenador da EBD</option>
+                                <option value="admin_conteudo">Administrador de Conteúdo</option>
+                                <option value="pastoral">Pastor / Liderança Geral</option>
+                                <option value="superadmin">Superadministrador</option>
+                              </select>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {isPrimaryOwner ? (
-                            <span className="rounded-md bg-[var(--nj-accent-soft)] px-3 py-1.5 font-semibold text-[var(--nj-accent-text)]">
-                              Superadministrador Principal
-                            </span>
-                          ) : (
-                            <select
-                              aria-label={`Perfil de acesso para ${u.displayName}`}
-                              value={u.role}
-                              onChange={(e) => void updateUserRole(u.uid, e.target.value as StoredUserRole)}
-                              className="nj-input rounded-md px-3 py-1.5 text-xs"
-                            >
-                              <option value="membro">Membro</option>
-                              <option value="voluntario">Voluntário</option>
-                              <option value="lider_ministerio">Líder de Ministério</option>
-                              <option value="coord_ebd">Coordenador da EBD</option>
-                              <option value="admin_conteudo">Administrador de Conteúdo</option>
-                              <option value="pastoral">Pastor / Liderança Geral</option>
-                              <option value="superadmin">Superadministrador</option>
-                            </select>
-                          )}
-                        </div>
+
+                        {!isPrimaryOwner && (
+                          <div className="rounded-lg border border-[var(--nj-border)] bg-[var(--nj-surface-alt)] p-3 space-y-2.5">
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--nj-ink-subtle)]">
+                              Ministérios liberados para ver escala ({currentMinIds.length} selecionado(s))
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {ministryCatalog.map((m) => {
+                                const checked = currentMinIds.includes(m.id);
+                                return (
+                                  <label
+                                    key={m.id}
+                                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition ${
+                                      checked
+                                        ? 'border-[var(--nj-accent-text)] bg-[var(--nj-accent-soft)] font-semibold text-[var(--nj-accent-text)]'
+                                        : 'border-[var(--nj-border)] bg-[var(--nj-surface)] text-[var(--nj-ink-muted)]'
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => toggleMinistry(m.id)}
+                                      className="accent-[#466053]"
+                                    />
+                                    {m.name}
+                                  </label>
+                                );
+                              })}
+                            </div>
+
+                            {hasMedia && (
+                              <div className="border-t border-[var(--nj-border)] pt-2.5">
+                                <p className="mb-1.5 text-[11px] font-medium text-[var(--nj-ink-subtle)]">
+                                  Sub-equipes de Mídia (opcional — se nenhuma marcada, vê toda a Mídia):
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {mediaSubTeams.map((dep) => {
+                                    const checked = currentDeptIds.includes(dep.id);
+                                    return (
+                                      <label
+                                        key={dep.id}
+                                        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] transition ${
+                                          checked
+                                            ? 'border-[var(--nj-accent-text)] bg-[var(--nj-accent-soft)] font-semibold text-[var(--nj-accent-text)]'
+                                            : 'border-[var(--nj-border)] bg-[var(--nj-surface)] text-[var(--nj-ink-muted)]'
+                                        }`}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={() => toggleMediaDept(dep.id)}
+                                          className="accent-[#466053]"
+                                        />
+                                        {dep.name}
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })

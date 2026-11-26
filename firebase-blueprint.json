@@ -65,6 +65,10 @@
           "type": "array",
           "description": "Bounded list of up to 10 ministry IDs."
         },
+        "departmentIds": {
+          "type": "array",
+          "description": "Bounded list of up to 10 sub-department IDs (e.g. dep-transmissao, dep-telao, dep-social)."
+        },
         "favoriteTrackIds": {
           "type": "array",
           "description": "Bounded list of up to 100 favorite track IDs."

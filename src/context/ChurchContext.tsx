@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import {
   collection,
   deleteDoc,
@@ -23,23 +23,19 @@ import {
   INITIAL_EBD_LESSONS,
   INITIAL_EVENTS,
   INITIAL_INSTITUTIONAL_AREAS,
-  INITIAL_MINISTRIES,
   INITIAL_NOTIFICATIONS,
   INITIAL_PRAYERS,
-  INITIAL_REPERTOIRES,
-  INITIAL_SCHEDULES,
   INITIAL_SERMON_NOTES,
   INITIAL_VIDEOS,
   INITIAL_WEEKLY_INFORMATIVO,
 } from '../data/initialData';
+import { useAuth } from '../contexts/AuthContext';
 import {
-  auth,
   BOOTSTRAP_SUPERADMIN_EMAIL,
   db,
-  googleProvider,
   handleFirestoreError,
   OperationType,
-} from '../firebase';
+} from '../lib/firebase';
 import {
   buildDiscographyPayload,
   buildEbdClassPayload,
@@ -47,9 +43,15 @@ import {
   buildEventDocPayload,
   buildMinistryPayload,
   buildSchedulePayload,
+  createBroadcastVideoDoc,
+  deleteBroadcastVideoDoc,
+  deleteScheduleSlotDoc,
   recordAuditEntry,
+  saveWeeklyInformativoDoc,
   seedInitialChurchDataIfEmpty,
   stripUndefined,
+  subscribeToBroadcastVideos,
+  subscribeToMinistrySchedules,
   timestampToDateStr,
   timestampToDateTimePtBR,
 } from '../services/firestoreService';
@@ -131,6 +133,14 @@ interface ChurchContextValue {
   signOutUser: () => Promise<void>;
   usersList: RegisteredUser[];
   updateUserRole: (uid: string, role: StoredUserRole) => Promise<void>;
+  updateUserMinistries: (uid: string, ministryIds: string[], departmentIds?: string[]) => Promise<void>;
+  userMinistryIds: string[];
+  userDepartmentIds: string[];
+  hasScheduleAccess: boolean;
+  canManageSchedules: boolean;
+  canManageVideos: boolean;
+  dataLoading: boolean;
+  dataError: string | null;
   dbSynced: boolean;
 
   // Domain State
@@ -168,6 +178,8 @@ interface ChurchContextValue {
   // Actions
   updateChurchInfo: (patch: Partial<ChurchInstitutionInfo>) => void;
   updateWeeklyInformativo: (patch: Partial<WeeklyInformativoVideo>) => void;
+  addBroadcastVideo: (video: Omit<BroadcastVideo, 'id'>) => Promise<void>;
+  deleteBroadcastVideo: (videoId: string) => Promise<void>;
   addWeeklyService: (srv: Omit<WeeklyService, 'id'>) => void;
   deleteWeeklyService: (id: string) => void;
   registerForEvent: (eventId: string, data: { name: string; phone: string; email: string; notes?: string }) => void;
@@ -192,6 +204,7 @@ interface ChurchContextValue {
   updateVolunteerStatus: (slotId: string, status: VolunteerStatus, swapReason?: string) => void;
   resolveScheduleSwap: (slotId: string, newVolunteerName: string) => { ok: boolean; error?: string };
   addScheduleSlot: (item: Omit<ScheduleSlot, 'id' | 'volunteerStatus'>) => { ok: boolean; error?: string };
+  deleteScheduleSlot: (slotId: string) => Promise<void>;
   duplicateEventSchedules: (fromEventTitle: string, toEventTitle: string, newDate: string, newTime: string) => void;
   addUnavailability: (record: Omit<UnavailabilityRecord, 'id'>) => void;
   submitPrayer: (data: { authorName: string; isVisitor?: boolean; category: string; message: string; privacy: PrayerPrivacy }) => void;
@@ -220,17 +233,26 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return 'dark';
   });
 
-  // Firebase Auth & RBAC state
-  const [authUser, setAuthUser] = useState<User | null>(null);
-  const [authReady, setAuthReady] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
+  // Firebase Auth from dedicated AuthContext
+  const {
+    user: authUser,
+    authReady: baseAuthReady,
+    authLoading,
+    loginWithGoogle,
+    logout: authLogout,
+  } = useAuth();
+  const [profileReady, setProfileReady] = useState(false);
+  const authReady = baseAuthReady && (!authUser || profileReady);
   const [userProfile, setUserProfile] = useState<RegisteredUser | null>(null);
   const [previewProfile, setPreviewProfile] = useState<AccessProfile | null>(null);
   const [usersList, setUsersList] = useState<RegisteredUser[]>([]);
   const [dbSynced, setDbSynced] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  // Domain collections hydrated from Firestore (with initial institutional defaults until first Superadmin seed)
+  // Domain collections hydrated from Firestore
+  // Note: ministries, schedules, and repertoires start strictly EMPTY (never exposed to visitors or unassigned members)
   const [churchInfo, setChurchInfo] = useState<ChurchInstitutionInfo>(INITIAL_CHURCH_INFO);
   const [weeklyInformativo, setWeeklyInformativo] = useState<WeeklyInformativoVideo>(INITIAL_WEEKLY_INFORMATIVO);
   const [institutionalAreas, setInstitutionalAreas] = useState<InstitutionalArea[]>(INITIAL_INSTITUTIONAL_AREAS);
@@ -242,9 +264,9 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [ebdLessons, setEbdLessons] = useState<EbdLesson[]>(INITIAL_EBD_LESSONS);
   const [ebdClasses, setEbdClasses] = useState<EbdClass[]>(INITIAL_EBD_CLASSES);
   const [discography, setDiscography] = useState<DiscographyProject[]>(INITIAL_DISCOGRAPHY);
-  const [ministries, setMinistries] = useState<MinistryUnit[]>(INITIAL_MINISTRIES);
-  const [schedules, setSchedules] = useState<ScheduleSlot[]>(INITIAL_SCHEDULES);
-  const [repertoires, setRepertoires] = useState<CultRepertoire[]>(INITIAL_REPERTOIRES);
+  const [ministries, setMinistries] = useState<MinistryUnit[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleSlot[]>([]);
+  const [repertoires, setRepertoires] = useState<CultRepertoire[]>([]);
   const [unavailability, setUnavailability] = useState<UnavailabilityRecord[]>([]);
   const [prayers, setPrayers] = useState<PrayerRequest[]>(
     INITIAL_PRAYERS.filter((p) => p.privacy === 'comunidade')
@@ -324,44 +346,62 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const isAdminOrLeader = isAdminContentOrHigher || realRole === 'lider_ministerio';
   const isStaff = isEbdManager || isAdminOrLeader;
 
-  // 1. Firebase Authentication listener & user profile bootstrap
+  // Strict per-ministry membership (assigned by Superadmin / Pastoral in users/{uid})
+  const userMinistryIds = useMemo(
+    () => (Array.isArray(userProfile?.ministryIds) ? userProfile.ministryIds : []),
+    [userProfile?.ministryIds]
+  );
+  const userDepartmentIds = useMemo(
+    () => (Array.isArray(userProfile?.departmentIds) ? userProfile.departmentIds : []),
+    [userProfile?.departmentIds]
+  );
+  const hasScheduleAccess = Boolean(
+    authUser && (isSuperAdminOrPastoral || userMinistryIds.length > 0)
+  );
+  const canManageSchedules = Boolean(
+    authUser && (isSuperAdminOrPastoral || (isAdminOrLeader && userMinistryIds.length > 0))
+  );
+  const canManageVideos = Boolean(authUser && isAdminContentOrHigher);
+
+  // 1. User profile bootstrap & real-time listener in users/{uid}
   useEffect(() => {
+    if (!baseAuthReady) return;
+    setPreviewProfile(null);
+
+    if (!authUser) {
+      setUserProfile(null);
+      setUsersList([]);
+      setRegistrations([]);
+      setUnavailability([]);
+      setMinistries([]);
+      setSchedules([]);
+      setRepertoires([]);
+      setAuditLogs([]);
+      setSermonNotes(INITIAL_SERMON_NOTES);
+      setProfileReady(true);
+      return;
+    }
+
+    let cancelled = false;
     let unsubUserDoc: (() => void) | null = null;
+    setProfileReady(false);
 
-    const unsubAuth = onAuthStateChanged(auth, async (user) => {
-      if (unsubUserDoc) {
-        unsubUserDoc();
-        unsubUserDoc = null;
-      }
-
-      setAuthUser(user);
-      setPreviewProfile(null);
-
-      if (!user) {
-        setUserProfile(null);
-        setUsersList([]);
-        setRegistrations([]);
-        setUnavailability([]);
-        setAuditLogs([]);
-        setSermonNotes(INITIAL_SERMON_NOTES);
-        setAuthReady(true);
-        return;
-      }
-
-      const userRef = doc(db, 'users', user.uid);
+    const bootstrapProfile = async () => {
+      const userRef = doc(db, 'users', authUser.uid);
       try {
         const snap = await getDoc(userRef);
-        if (!snap.exists()) {
+        if (!snap.exists() && authUser.emailVerified) {
           const isPrimaryAdmin =
-            user.emailVerified && user.email?.toLowerCase() === BOOTSTRAP_SUPERADMIN_EMAIL;
+            authUser.email?.toLowerCase() === BOOTSTRAP_SUPERADMIN_EMAIL;
           const initialRole: StoredUserRole = isPrimaryAdmin ? 'superadmin' : 'membro';
           await setDoc(userRef, {
-            uid: user.uid,
-            displayName: sanitizeText(user.displayName || user.email?.split('@')[0] || 'Membro NJ', 120),
-            email: sanitizeText(user.email || '', 160),
-            photoUrl: safeHttpsOrRelativeMediaUrl(user.photoURL),
+            uid: authUser.uid,
+            displayName: sanitizeText(authUser.displayName || authUser.email?.split('@')[0] || 'Membro NJ', 120),
+            email: sanitizeText(authUser.email || '', 160),
+            photoUrl: safeHttpsOrRelativeMediaUrl(authUser.photoURL),
             role: initialRole,
             ministryIds: [],
+            departmentIds: [],
             favoriteTrackIds: ['trk-2025-1'],
             eventReminders: [],
             completedBibleDays: ['day-1', 'day-2'],
@@ -372,9 +412,9 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           });
         }
 
-        if (user.emailVerified && user.email?.toLowerCase() === BOOTSTRAP_SUPERADMIN_EMAIL) {
-          const seeded = await seedInitialChurchDataIfEmpty(user.uid);
-          if (seeded) {
+        if (authUser.emailVerified && authUser.email?.toLowerCase() === BOOTSTRAP_SUPERADMIN_EMAIL) {
+          const seeded = await seedInitialChurchDataIfEmpty(authUser.uid);
+          if (seeded && !cancelled) {
             notify('Banco de dados Firestore inicializado com o conteúdo oficial da Nova Jerusalém Sampaio.');
           }
         }
@@ -382,31 +422,44 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.error('Erro ao inicializar perfil do usuário:', error);
       }
 
+      if (cancelled) return;
       unsubUserDoc = onSnapshot(
         userRef,
         (docSnap) => {
           if (docSnap.exists()) {
-            const data = docSnap.data() as RegisteredUser;
-            setUserProfile(data);
+            setUserProfile(docSnap.data() as RegisteredUser);
+          } else {
+            setUserProfile(null);
           }
-          setAuthReady(true);
+          setProfileReady(true);
         },
         (error) => {
-          setAuthReady(true);
-          handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+          setProfileReady(true);
+          setDataError('Não foi possível carregar seu perfil de permissões no Firestore.');
+          handleFirestoreError(error, OperationType.GET, `users/${authUser.uid}`);
         }
       );
-    });
+    };
+
+    void bootstrapProfile();
 
     return () => {
+      cancelled = true;
       if (unsubUserDoc) unsubUserDoc();
-      unsubAuth();
     };
-  }, []);
+  }, [baseAuthReady, authUser]);
 
-  // 2. Public Firestore real-time listeners (settings, events, announcements, ebdClasses, discography, ministries, repertoires, videos, notifications)
+  // 2. Public Firestore real-time listeners (settings, events, announcements, ebdClasses, discography, videos, notifications)
   useEffect(() => {
     const unsubs: (() => void)[] = [];
+    setDataLoading(true);
+    setDataError(null);
+
+    const handlePublicReadError = (path: string, op: OperationType) => (error: unknown) => {
+      setDataLoading(false);
+      setDataError('Erro ao sincronizar dados com o Firebase Firestore. Verifique sua conexão.');
+      handleFirestoreError(error, op, path);
+    };
 
     // Settings documents (direct get listeners)
     unsubs.push(
@@ -418,8 +471,9 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (payload) setChurchInfo(payload);
             setDbSynced(true);
           }
+          setDataLoading(false);
         },
-        (error) => handleFirestoreError(error, OperationType.GET, 'settings/churchInfo')
+        handlePublicReadError('settings/churchInfo', OperationType.GET)
       )
     );
 
@@ -432,7 +486,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (payload) setWeeklyInformativo(payload);
           }
         },
-        (error) => handleFirestoreError(error, OperationType.GET, 'settings/weeklyInformativo')
+        handlePublicReadError('settings/weeklyInformativo', OperationType.GET)
       )
     );
 
@@ -445,7 +499,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (items && items.length > 0) setInstitutionalAreas(items);
           }
         },
-        (error) => handleFirestoreError(error, OperationType.GET, 'settings/institutionalAreas')
+        handlePublicReadError('settings/institutionalAreas', OperationType.GET)
       )
     );
 
@@ -458,7 +512,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (items && items.length > 0) setDevotionals(items);
           }
         },
-        (error) => handleFirestoreError(error, OperationType.GET, 'settings/devotionals')
+        handlePublicReadError('settings/devotionals', OperationType.GET)
       )
     );
 
@@ -484,8 +538,9 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setEvents(list);
             setDbSynced(true);
           }
+          setDataLoading(false);
         },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'events')
+        handlePublicReadError('events', OperationType.LIST)
       )
     );
 
@@ -511,7 +566,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setAnnouncements(list);
           }
         },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'announcements')
+        handlePublicReadError('announcements', OperationType.LIST)
       )
     );
 
@@ -526,7 +581,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             );
           }
         },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'ebdClasses')
+        handlePublicReadError('ebdClasses', OperationType.LIST)
       )
     );
 
@@ -542,54 +597,17 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setDiscography(list);
           }
         },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'discography')
+        handlePublicReadError('discography', OperationType.LIST)
       )
     );
 
-    // Ministries
+    // Broadcast Videos (Public Read)
     unsubs.push(
-      onSnapshot(
-        query(collection(db, 'ministries'), where('visibility', '==', 'public')),
-        (snap) => {
-          if (!snap.empty) {
-            setMinistries(
-              snap.docs.map((d) => ({ ...(d.data() as Omit<MinistryUnit, 'id'>), id: d.id }))
-            );
-          }
+      subscribeToBroadcastVideos(
+        (list) => {
+          if (list.length > 0) setVideos(list);
         },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'ministries')
-      )
-    );
-
-    // Repertoires
-    unsubs.push(
-      onSnapshot(
-        query(collection(db, 'repertoires'), where('visibility', '==', 'public')),
-        (snap) => {
-          if (!snap.empty) {
-            const list = snap.docs
-              .map((d) => ({ ...(d.data() as Omit<CultRepertoire, 'id'>), id: d.id }))
-              .sort((a, b) => b.date.localeCompare(a.date));
-            setRepertoires(list);
-          }
-        },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'repertoires')
-      )
-    );
-
-    // Broadcast Videos
-    unsubs.push(
-      onSnapshot(
-        query(collection(db, 'videos'), where('visibility', '==', 'public')),
-        (snap) => {
-          if (!snap.empty) {
-            const list = snap.docs
-              .map((d) => ({ ...(d.data() as Omit<BroadcastVideo, 'id'>), id: d.id }))
-              .sort((a, b) => b.date.localeCompare(a.date));
-            setVideos(list);
-          }
-        },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'videos')
+        handlePublicReadError('videos', OperationType.LIST)
       )
     );
 
@@ -618,7 +636,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setRawNotifications(list);
           }
         },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'notifications')
+        handlePublicReadError('notifications', OperationType.LIST)
       )
     );
 
@@ -651,27 +669,125 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       )
     );
 
-    // Schedules: leaders/admins see drafts; others see published/active/completed
-    const schedulesQuery = isAdminOrLeader
-      ? collection(db, 'schedules')
-      : query(
+    // STRICT PER-MINISTRY ISOLATION:
+    // Visitors & unassigned members receive ZERO ministries, schedules, or repertoires.
+    // Volunteers / Leaders ONLY receive data for their own assigned ministryIds (and optional departmentIds).
+    if (isSuperAdminOrPastoral) {
+      unsubs.push(
+        onSnapshot(
+          query(collection(db, 'ministries'), where('visibility', '==', 'public')),
+          (snap) => {
+            setMinistries(
+              snap.docs.map((d) => ({ ...(d.data() as Omit<MinistryUnit, 'id'>), id: d.id }))
+            );
+          },
+          (error) => handleFirestoreError(error, OperationType.LIST, 'ministries')
+        )
+      );
+
+      unsubs.push(
+        onSnapshot(
           collection(db, 'schedules'),
-          where('scheduleStatus', 'in', ['publicada', 'em_andamento', 'concluida'])
-        );
-    unsubs.push(
-      onSnapshot(
-        schedulesQuery,
-        (snap) => {
-          if (!snap.empty) {
+          (snap) => {
             const list = snap.docs
               .map((d) => ({ ...(d.data() as Omit<ScheduleSlot, 'id'>), id: d.id }))
               .sort((a, b) => a.date.localeCompare(b.date));
             setSchedules(list);
-          }
-        },
-        (error) => handleFirestoreError(error, OperationType.LIST, 'schedules')
-      )
-    );
+          },
+          (error) => handleFirestoreError(error, OperationType.LIST, 'schedules')
+        )
+      );
+
+      unsubs.push(
+        onSnapshot(
+          query(collection(db, 'repertoires'), where('visibility', '==', 'public')),
+          (snap) => {
+            const list = snap.docs
+              .map((d) => ({ ...(d.data() as Omit<CultRepertoire, 'id'>), id: d.id }))
+              .sort((a, b) => b.date.localeCompare(a.date));
+            setRepertoires(list);
+          },
+          (error) => handleFirestoreError(error, OperationType.LIST, 'repertoires')
+        )
+      );
+    } else if (authUser && userMinistryIds.length > 0) {
+      const ministryMap = new Map<string, MinistryUnit>();
+      const schedulesByMin = new Map<string, ScheduleSlot[]>();
+
+      userMinistryIds.forEach((mid) => {
+        // Direct get listener per assigned ministry (enforced by allow get: isMemberOfMinistry(ministryId))
+        unsubs.push(
+          onSnapshot(
+            doc(db, 'ministries', mid),
+            (docSnap) => {
+              if (docSnap.exists()) {
+                ministryMap.set(mid, {
+                  ...(docSnap.data() as Omit<MinistryUnit, 'id'>),
+                  id: docSnap.id,
+                });
+              } else {
+                ministryMap.delete(mid);
+              }
+              setMinistries(Array.from(ministryMap.values()));
+            },
+            (error) => handleFirestoreError(error, OperationType.GET, `ministries/${mid}`)
+          )
+        );
+
+        // Per-ministry schedule query (enforced by allow list: isMemberOfMinistry(resource.data.ministryId))
+        unsubs.push(
+          subscribeToMinistrySchedules(
+            mid,
+            (slots) => {
+              const filtered = slots.filter((slot) => {
+                // Non-leaders only see published/active/completed shifts
+                if (!isAdminOrLeader && !['publicada', 'em_andamento', 'concluida'].includes(slot.scheduleStatus)) {
+                  return false;
+                }
+                // Optional granular department scoping (e.g. Mídia -> Transmissão only)
+                if (
+                  slot.departmentId &&
+                  userDepartmentIds.length > 0 &&
+                  !userDepartmentIds.includes(slot.departmentId)
+                ) {
+                  return false;
+                }
+                return true;
+              });
+              schedulesByMin.set(mid, filtered);
+              const merged = Array.from(schedulesByMin.values())
+                .flat()
+                .sort((a, b) => a.date.localeCompare(b.date));
+              setSchedules(merged);
+            },
+            (error) => handleFirestoreError(error, OperationType.LIST, `schedules?ministryId=${mid}`)
+          )
+        );
+      });
+
+      // Repertoires ONLY for Louvor ministry members
+      if (userMinistryIds.includes('min-louvor')) {
+        unsubs.push(
+          onSnapshot(
+            query(collection(db, 'repertoires'), where('visibility', '==', 'public')),
+            (snap) => {
+              const list = snap.docs
+                .map((d) => ({ ...(d.data() as Omit<CultRepertoire, 'id'>), id: d.id }))
+                .sort((a, b) => b.date.localeCompare(a.date));
+              setRepertoires(list);
+            },
+            (error) => handleFirestoreError(error, OperationType.LIST, 'repertoires')
+          )
+        );
+      } else {
+        setRepertoires([]);
+      }
+    } else {
+      // Visitor or member without ministry assignment: zero access to schedules/ministries/repertoires
+      setMinistries([]);
+      setSchedules([]);
+      setRepertoires([]);
+    }
 
     // Prayers (LGPD Isolation: public only sees 'comunidade'; Superadmin/Pastoral sees all including confidential)
     const prayersQuery = isSuperAdminOrPastoral
@@ -839,7 +955,16 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       unsubs.forEach((u) => u());
     };
-  }, [authReady, authUser, isEbdManager, isAdminOrLeader, isAdminContentOrHigher, isSuperAdminOrPastoral]);
+  }, [
+    authReady,
+    authUser,
+    isEbdManager,
+    isAdminOrLeader,
+    isAdminContentOrHigher,
+    isSuperAdminOrPastoral,
+    userMinistryIds,
+    userDepartmentIds,
+  ]);
 
   // Derived personal preferences (from Firestore profile if signed in, else local memory)
   const favoriteTrackIds = userProfile?.favoriteTrackIds ?? localFavoriteTrackIds;
@@ -868,32 +993,26 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const currentMemberName = userProfile?.displayName || authUser?.displayName || 'Visitante';
 
-  // Auth actions
+  // Auth actions (delegated to AuthContext)
   const signInWithGoogle = async () => {
-    setAuthLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      notify(`Bem-vindo(a), ${result.user.displayName || result.user.email}!`);
+      const signedIn = await loginWithGoogle();
+      notify(`Bem-vindo(a), ${signedIn.displayName || signedIn.email}!`);
     } catch (error) {
       const msg = error instanceof Error ? error.message : '';
-      if (!msg.includes('popup-closed-by-user')) {
-        notify('Não foi possível concluir o login com Google. Tente novamente.', 'warning');
+      if (msg && !msg.includes('fechada antes da conclusão')) {
+        notify(msg, 'warning');
       }
-    } finally {
-      setAuthLoading(false);
     }
   };
 
   const signOutUser = async () => {
-    setAuthLoading(true);
     try {
-      await signOut(auth);
+      await authLogout();
       setPreviewProfile(null);
       notify('Sessão encerrada com segurança.');
     } catch {
       notify('Erro ao encerrar a sessão.', 'warning');
-    } finally {
-      setAuthLoading(false);
     }
   };
 
@@ -916,6 +1035,36 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       notify(`Nível de acesso atualizado para "${role}".`);
     } catch (error) {
       notify('Não foi possível alterar o perfil de acesso deste usuário.', 'warning');
+      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+    }
+  };
+
+  const updateUserMinistries = async (
+    uid: string,
+    ministryIds: string[],
+    departmentIds: string[] = []
+  ) => {
+    if (!authUser || !isSuperAdminOrPastoral) {
+      notify('Apenas o Superadministrador ou Pastor podem vincular ministérios aos membros.', 'warning');
+      return;
+    }
+    const safeMinistries = ministryIds.slice(0, 10).map((m) => sanitizeText(m, 128));
+    const safeDepartments = departmentIds.slice(0, 10).map((d) => sanitizeText(d, 128));
+    try {
+      await updateDoc(doc(db, 'users', uid), {
+        ministryIds: safeMinistries,
+        departmentIds: safeDepartments,
+        updatedAt: serverTimestamp(),
+      });
+      await recordAuditEntry(
+        authUser.uid,
+        `${currentMemberName} (${realRole})`,
+        'Segurança / Ministérios',
+        `Atualizou os ministérios permitidos do usuário ${uid} (${safeMinistries.join(', ') || 'nenhum'}).`
+      );
+      notify('Permissões de ministério atualizadas no banco de dados.');
+    } catch (error) {
+      notify('Não foi possível atualizar os ministérios deste usuário.', 'warning');
       handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
     }
   };
@@ -994,21 +1143,44 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       posterUrl: patch.posterUrl !== undefined ? safeHttpsOrRelativeMediaUrl(patch.posterUrl) : weeklyInformativo.posterUrl,
     };
     setWeeklyInformativo(next);
-    void setDoc(doc(db, 'settings', 'weeklyInformativo'), {
-      kind: 'weeklyInformativo',
-      payload: next,
-      updatedBy: authUser.uid,
-      updatedAt: serverTimestamp(),
-    })
+    void saveWeeklyInformativoDoc(authUser.uid, next)
       .then(() => {
         void publishBroadcastNotification('evento', 'Novo vídeo do Informativo NJ publicado', next.title, 'agenda');
         void recordAuditEntry(authUser.uid, `${currentMemberName} (${realRole})`, 'Informativo NJ', `Atualizou o vídeo semanal (${next.weekLabel}).`);
         notify('Vídeo semanal do Informativo NJ publicado no banco de dados.');
       })
-      .catch((error) => {
+      .catch(() => {
         notify('Erro ao atualizar Informativo NJ.', 'warning');
-        handleFirestoreError(error, OperationType.WRITE, 'settings/weeklyInformativo');
       });
+  };
+
+  const addBroadcastVideo: ChurchContextValue['addBroadcastVideo'] = async (video) => {
+    if (!authUser || !canManageVideos) {
+      notify('Acesso negado. Apenas administradores autenticados podem cadastrar vídeos.', 'warning');
+      return;
+    }
+    try {
+      await createBroadcastVideoDoc(video);
+      await publishBroadcastNotification('transmissao', `Novo vídeo: ${video.title}`, `${video.preacher} · ${video.series}`, 'transmissoes');
+      await recordAuditEntry(authUser.uid, `${currentMemberName} (${realRole})`, 'Vídeos / Transmissões', `Publicou vídeo "${video.title}".`);
+      notify('Vídeo publicado no banco de dados.');
+    } catch {
+      notify('Erro ao publicar vídeo no Firestore.', 'warning');
+    }
+  };
+
+  const deleteBroadcastVideo: ChurchContextValue['deleteBroadcastVideo'] = async (videoId) => {
+    if (!authUser || !canManageVideos) {
+      notify('Acesso negado. Apenas administradores autenticados podem excluir vídeos.', 'warning');
+      return;
+    }
+    try {
+      await deleteBroadcastVideoDoc(videoId);
+      await recordAuditEntry(authUser.uid, `${currentMemberName} (${realRole})`, 'Vídeos / Transmissões', `Removeu vídeo ${videoId}.`);
+      notify('Vídeo removido com sucesso.');
+    } catch {
+      notify('Erro ao remover vídeo.', 'warning');
+    }
   };
 
   const addWeeklyService: ChurchContextValue['addWeeklyService'] = (srv) => {
@@ -1598,6 +1770,20 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { ok: true };
   };
 
+  const deleteScheduleSlot: ChurchContextValue['deleteScheduleSlot'] = async (slotId) => {
+    if (!authUser || !canManageSchedules) {
+      notify('Acesso negado. Apenas líderes ou administradores autenticados podem excluir escalas.', 'warning');
+      return;
+    }
+    try {
+      await deleteScheduleSlotDoc(slotId);
+      await recordAuditEntry(authUser.uid, `${currentMemberName} (${realRole})`, 'Escalas', `Excluiu vaga de escala (${slotId}).`);
+      notify('Vaga removida da escala.');
+    } catch {
+      notify('Não foi possível remover esta vaga da escala.', 'warning');
+    }
+  };
+
   const duplicateEventSchedules: ChurchContextValue['duplicateEventSchedules'] = (
     fromEventTitle,
     toEventTitle,
@@ -1837,6 +2023,14 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         signOutUser,
         usersList,
         updateUserRole,
+        updateUserMinistries,
+        userMinistryIds,
+        userDepartmentIds,
+        hasScheduleAccess,
+        canManageSchedules,
+        canManageVideos,
+        dataLoading,
+        dataError,
         dbSynced,
         currentMemberName,
         theme,
@@ -1869,6 +2063,8 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         auditLogs,
         updateChurchInfo,
         updateWeeklyInformativo,
+        addBroadcastVideo,
+        deleteBroadcastVideo,
         addWeeklyService,
         deleteWeeklyService,
         registerForEvent,
@@ -1893,6 +2089,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         updateVolunteerStatus,
         resolveScheduleSwap,
         addScheduleSlot,
+        deleteScheduleSlot,
         duplicateEventSchedules,
         addUnavailability,
         submitPrayer,

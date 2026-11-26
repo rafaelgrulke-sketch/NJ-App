@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   Check,
   CheckSquare,
   Download,
   ExternalLink,
+  Lock,
+  LogIn,
   Music,
   Plus,
   RefreshCw,
   Share2,
+  ShieldAlert,
   Trash2,
-  Users,
   X,
 } from 'lucide-react';
 import { useChurch } from '../../context/ChurchContext';
@@ -22,10 +24,16 @@ import {
 } from '../../utils/formatters';
 import { safeExternalUrl } from '../../utils/security';
 
-export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas' }> = ({
-  initialSubMode = 'central',
-}) => {
+export const MinistriesHubView: React.FC<{
+  initialSubMode?: 'central' | 'minhas';
+  onRequestLogin?: () => void;
+}> = ({ initialSubMode = 'central', onRequestLogin }) => {
   const {
+    authUser,
+    authReady,
+    hasScheduleAccess,
+    canManageSchedules,
+    userDepartmentIds,
     currentMemberName,
     ministries,
     schedules,
@@ -40,7 +48,7 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
   } = useChurch();
 
   const [mode, setMode] = useState<'central' | 'minhas' | 'indisponibilidade'>(initialSubMode);
-  const [selectedMinistryId, setSelectedMinistryId] = useState<string>(ministries[0]?.id || 'min-midia');
+  const [selectedMinistryId, setSelectedMinistryId] = useState<string>(ministries[0]?.id || '');
   const [mediaSubTab, setMediaSubTab] = useState<
     'visao' | 'dep-telao' | 'dep-transmissao' | 'dep-social' | 'integrantes' | 'ocorrencias'
   >('visao');
@@ -49,9 +57,9 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
   const [swapReason, setSwapReason] = useState('');
   const [incidentNote, setIncidentNote] = useState('');
   const [unavDate, setUnavDate] = useState('');
-  const [unavMinId, setUnavMinId] = useState(ministries[0]?.id || 'min-midia');
+  const [unavMinId, setUnavMinId] = useState(ministries[0]?.id || '');
   const [unavReason, setUnavReason] = useState('');
-  const [repTargetId, setRepTargetId] = useState<string>(repertoires[0]?.id || 'rep-1');
+  const [repTargetId, setRepTargetId] = useState<string>(repertoires[0]?.id || '');
   const [songOrigin, setSongOrigin] = useState<'outro_louvor' | 'min_nj'>('outro_louvor');
   const [songTitle, setSongTitle] = useState('');
   const [songArtist, setSongArtist] = useState('');
@@ -60,8 +68,86 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
   const [songRefUrl, setSongRefUrl] = useState('');
   const [songNotes, setSongNotes] = useState('');
 
+  // Keep selected ministry & repertoire synced with the user's authorized list
+  useEffect(() => {
+    if (ministries.length > 0 && !ministries.some((m) => m.id === selectedMinistryId)) {
+      setSelectedMinistryId(ministries[0].id);
+    }
+    if (ministries.length > 0 && !ministries.some((m) => m.id === unavMinId)) {
+      setUnavMinId(ministries[0].id);
+    }
+  }, [ministries, selectedMinistryId, unavMinId]);
+
+  useEffect(() => {
+    if (repertoires.length > 0 && !repertoires.some((r) => r.id === repTargetId)) {
+      setRepTargetId(repertoires[0].id);
+    }
+  }, [repertoires, repTargetId]);
+
+  // STRICT ACCESS GATE: Visitors & unassigned members CANNOT see ANY schedules or ministry data
+  if (!authReady) {
+    return (
+      <div className="nj-card p-8 text-center text-sm text-[var(--nj-ink-muted)]">
+        Verificando seu vínculo ministerial no banco de dados...
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <section className="nj-card mx-auto max-w-xl space-y-4 p-8 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
+          <Lock className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <p className="text-xs font-semibold tracking-widest uppercase text-[var(--nj-accent-text)]">
+          Acesso Restrito · Escalas Ministeriais
+        </p>
+        <h1 className="font-serif text-2xl font-semibold text-[var(--nj-ink)]">
+          Área exclusiva para voluntários cadastrados
+        </h1>
+        <p className="text-sm leading-relaxed text-[var(--nj-ink-muted)]">
+          Visitantes sem cadastro não têm acesso às escalas dos ministérios. Faça login com sua conta autorizada para visualizar apenas a escala do ministério em que você serve.
+        </p>
+        {onRequestLogin && (
+          <button
+            type="button"
+            onClick={onRequestLogin}
+            className="nj-btn-primary inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold"
+          >
+            <LogIn className="h-4 w-4" aria-hidden="true" />
+            Entrar para acessar minha escala
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  if (!hasScheduleAccess || ministries.length === 0) {
+    return (
+      <section className="nj-card mx-auto max-w-xl space-y-4 p-8 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500">
+          <ShieldAlert className="h-6 w-6" aria-hidden="true" />
+        </div>
+        <p className="text-xs font-semibold tracking-widest uppercase text-[var(--nj-accent-text)]">
+          Vínculo Ministerial Necessário
+        </p>
+        <h1 className="font-serif text-2xl font-semibold text-[var(--nj-ink)]">
+          Você ainda não está vinculado a nenhum ministério
+        </h1>
+        <p className="text-sm leading-relaxed text-[var(--nj-ink-muted)]">
+          Por segurança e organização da igreja, cada voluntário visualiza somente a escala do ministério do qual participa (por exemplo, quem é da Mídia vê apenas Mídia; quem é do Louvor vê apenas Louvor). Solicite à liderança ou ao administrador para vincular sua conta ({authUser.email}) ao seu ministério.
+        </p>
+      </section>
+    );
+  }
+
   const selectedMinistry = ministries.find((m) => m.id === selectedMinistryId) || ministries[0];
   const isMedia = selectedMinistry?.slug === 'midia' && !!selectedMinistry.departments?.length;
+  const visibleMediaDepartments = isMedia
+    ? (selectedMinistry.departments || []).filter(
+        (d) => userDepartmentIds.length === 0 || userDepartmentIds.includes(d.id)
+      )
+    : [];
 
   const ministrySlots = schedules.filter((s) => s.ministryId === selectedMinistry?.id);
   const visibleSlots =
@@ -69,7 +155,9 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
       ? ministrySlots.filter((s) => s.departmentId === mediaSubTab)
       : ministrySlots;
 
-  const mySlots = schedules.filter((s) => s.volunteerName === currentMemberName);
+  const mySlots = schedules.filter(
+    (s) => s.volunteerUid === authUser.uid || s.volunteerName === currentMemberName
+  );
   const myUnavailability = unavailability.filter((u) => u.volunteerName === currentMemberName);
 
   const handleShareWhatsApp = async (title: string, slotsToShare: typeof schedules) => {
@@ -221,11 +309,11 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
               </div>
             </div>
 
-            {/* Sub-navigation for Ministério de Mídia (Telão 1 + Transmissão 5 + Social Media 3 = 9) */}
-            {isMedia && selectedMinistry.departments && (
+            {/* Sub-navigation for Ministério de Mídia (scoped to userDepartmentIds when assigned) */}
+            {isMedia && visibleMediaDepartments.length > 0 && (
               <div className="mt-5 space-y-5">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {selectedMinistry.departments.map((dept) => {
+                  {visibleMediaDepartments.map((dept) => {
                     const targetCount = dept.positions.reduce((acc, p) => acc + p.quantity, 0);
                     const filledCount = ministrySlots.filter(
                       (s) => s.departmentId === dept.id && s.volunteerStatus !== 'recusado'
@@ -248,10 +336,11 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
 
                 <div className="nj-tabs flex flex-wrap items-center gap-1 w-fit">
                   {[
-                    { id: 'visao', label: 'Visão Geral (9 vagas)' },
-                    { id: 'dep-telao', label: 'Telão (1)' },
-                    { id: 'dep-transmissao', label: 'Transmissão (5)' },
-                    { id: 'dep-social', label: 'Social Media (3)' },
+                    { id: 'visao', label: 'Visão Geral' },
+                    ...visibleMediaDepartments.map((d) => ({
+                      id: d.id,
+                      label: d.name,
+                    })),
                     { id: 'integrantes', label: 'Integrantes' },
                     { id: 'ocorrencias', label: 'Ocorrências & Checklists' },
                   ].map((t) => (
@@ -402,22 +491,24 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
                       Registro de Ocorrências & Histórico
                     </h3>
                   </div>
-                  <form onSubmit={handleIncidentSubmit} className="mt-3 flex gap-2">
-                    <input
-                      type="text"
-                      value={incidentNote}
-                      onChange={(e) => setIncidentNote(e.target.value)}
-                      placeholder="Registrar observação técnica ou ocorrência do culto..."
-                      className="nj-input text-xs"
-                    />
-                    <button
-                      type="submit"
-                      className="nj-btn-primary inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs whitespace-nowrap"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Salvar
-                    </button>
-                  </form>
+                  {canManageSchedules && (
+                    <form onSubmit={handleIncidentSubmit} className="mt-3 flex gap-2">
+                      <input
+                        type="text"
+                        value={incidentNote}
+                        onChange={(e) => setIncidentNote(e.target.value)}
+                        placeholder="Registrar observação técnica ou ocorrência do culto..."
+                        className="nj-input text-xs"
+                      />
+                      <button
+                        type="submit"
+                        className="nj-btn-primary inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs whitespace-nowrap"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Salvar
+                      </button>
+                    </form>
+                  )}
 
                   <div className="mt-4 divide-y divide-[var(--nj-border)]">
                     {selectedMinistry.incidents.map((inc) => (
@@ -499,14 +590,16 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
                                     Ouvir <ExternalLink className="h-3 w-3" />
                                   </a>
                                 )}
-                                <button
-                                  type="button"
-                                  onClick={() => removeSongFromRepertoire(rep.id, song.id)}
-                                  className="rounded p-1 text-[var(--nj-ink-subtle)] hover:text-[var(--nj-ink)]"
-                                  aria-label={`Remover ${song.title} do repertório`}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
+                                {canManageSchedules && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSongFromRepertoire(rep.id, song.id)}
+                                    className="rounded p-1 text-[var(--nj-ink-subtle)] hover:text-[var(--nj-ink)]"
+                                    aria-label={`Remover ${song.title} do repertório`}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -517,121 +610,123 @@ export const MinistriesHubView: React.FC<{ initialSubMode?: 'central' | 'minhas'
                 </div>
 
                 <div className="space-y-6 lg:col-span-5">
-                  {/* Quick form to add ANY worship song to a Louvor schedule */}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!songTitle.trim()) return;
-                      addSongToRepertoire(repTargetId || repertoires[0]?.id, {
-                        title: songTitle.trim(),
-                        artist:
-                          songOrigin === 'min_nj'
-                            ? 'Ministério Nova Jerusalém'
-                            : songArtist.trim() || 'Louvor Congregacional',
-                        album: songOrigin === 'min_nj' ? 'Min. Nova Jerusalém' : 'Louvor Congregacional',
-                        origin: songOrigin,
-                        key: songKey.trim() || 'G',
-                        bpm: Number(songBpm) || 72,
-                        referenceUrl: songRefUrl.trim() || undefined,
-                        notes: songNotes.trim() || undefined,
-                      });
-                      setSongTitle('');
-                      setSongArtist('');
-                      setSongRefUrl('');
-                      setSongNotes('');
-                    }}
-                    className="rounded-lg border border-[var(--nj-border)] bg-[var(--nj-surface-alt)] p-4 space-y-3"
-                  >
-                    <h3 className="font-serif text-lg font-semibold text-[var(--nj-ink)]">
-                      Adicionar música à escala de Louvor
-                    </h3>
-                    <div>
-                      <label className="block text-[11px] text-[var(--nj-ink-muted)]">Culto / Escala</label>
-                      <select
-                        value={repTargetId}
-                        onChange={(e) => setRepTargetId(e.target.value)}
-                        className="nj-input mt-1 w-full rounded-md px-2.5 py-1.5 text-xs"
-                      >
-                        {repertoires.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.eventTitle} ({formatDatePtBR(r.date)})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSongOrigin('outro_louvor')}
-                        className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium ${
-                          songOrigin === 'outro_louvor' ? 'nj-tab-active' : 'nj-btn-secondary'
-                        }`}
-                      >
-                        Outro louvor
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSongOrigin('min_nj')}
-                        className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium ${
-                          songOrigin === 'min_nj' ? 'nj-tab-active' : 'nj-btn-secondary'
-                        }`}
-                      >
-                        Min. Nova Jerusalém
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      value={songTitle}
-                      onChange={(e) => setSongTitle(e.target.value)}
-                      placeholder="Nome do louvor *"
-                      className="nj-input w-full rounded-md px-2.5 py-1.5 text-xs"
-                    />
-                    {songOrigin === 'outro_louvor' && (
+                  {/* Quick form to add ANY worship song to a Louvor schedule (Authenticated leaders/admins ONLY) */}
+                  {canManageSchedules && (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!songTitle.trim()) return;
+                        addSongToRepertoire(repTargetId || repertoires[0]?.id, {
+                          title: songTitle.trim(),
+                          artist:
+                            songOrigin === 'min_nj'
+                              ? 'Ministério Nova Jerusalém'
+                              : songArtist.trim() || 'Louvor Congregacional',
+                          album: songOrigin === 'min_nj' ? 'Min. Nova Jerusalém' : 'Louvor Congregacional',
+                          origin: songOrigin,
+                          key: songKey.trim() || 'G',
+                          bpm: Number(songBpm) || 72,
+                          referenceUrl: songRefUrl.trim() || undefined,
+                          notes: songNotes.trim() || undefined,
+                        });
+                        setSongTitle('');
+                        setSongArtist('');
+                        setSongRefUrl('');
+                        setSongNotes('');
+                      }}
+                      className="rounded-lg border border-[var(--nj-border)] bg-[var(--nj-surface-alt)] p-4 space-y-3"
+                    >
+                      <h3 className="font-serif text-lg font-semibold text-[var(--nj-ink)]">
+                        Adicionar música à escala de Louvor
+                      </h3>
+                      <div>
+                        <label className="block text-[11px] text-[var(--nj-ink-muted)]">Culto / Escala</label>
+                        <select
+                          value={repTargetId}
+                          onChange={(e) => setRepTargetId(e.target.value)}
+                          className="nj-input mt-1 w-full rounded-md px-2.5 py-1.5 text-xs"
+                        >
+                          {repertoires.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.eventTitle} ({formatDatePtBR(r.date)})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSongOrigin('outro_louvor')}
+                          className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium ${
+                            songOrigin === 'outro_louvor' ? 'nj-tab-active' : 'nj-btn-secondary'
+                          }`}
+                        >
+                          Outro louvor
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSongOrigin('min_nj')}
+                          className={`flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium ${
+                            songOrigin === 'min_nj' ? 'nj-tab-active' : 'nj-btn-secondary'
+                          }`}
+                        >
+                          Min. Nova Jerusalém
+                        </button>
+                      </div>
                       <input
                         type="text"
                         required
-                        value={songArtist}
-                        onChange={(e) => setSongArtist(e.target.value)}
-                        placeholder="Artista / Ministério (ex.: Fernandinho, Morada) *"
+                        value={songTitle}
+                        onChange={(e) => setSongTitle(e.target.value)}
+                        placeholder="Nome do louvor *"
                         className="nj-input w-full rounded-md px-2.5 py-1.5 text-xs"
                       />
-                    )}
-                    <div className="grid grid-cols-2 gap-2">
+                      {songOrigin === 'outro_louvor' && (
+                        <input
+                          type="text"
+                          required
+                          value={songArtist}
+                          onChange={(e) => setSongArtist(e.target.value)}
+                          placeholder="Artista / Ministério (ex.: Fernandinho, Morada) *"
+                          className="nj-input w-full rounded-md px-2.5 py-1.5 text-xs"
+                        />
+                      )}
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={songKey}
+                          onChange={(e) => setSongKey(e.target.value)}
+                          placeholder="Tom (ex.: G)"
+                          className="nj-input rounded-md px-2.5 py-1.5 text-xs"
+                        />
+                        <input
+                          type="number"
+                          value={songBpm}
+                          onChange={(e) => setSongBpm(e.target.value)}
+                          placeholder="BPM"
+                          className="nj-input rounded-md px-2.5 py-1.5 text-xs"
+                        />
+                      </div>
+                      <input
+                        type="url"
+                        value={songRefUrl}
+                        onChange={(e) => setSongRefUrl(e.target.value)}
+                        placeholder="Link YouTube/Spotify para ensaio (opcional)"
+                        className="nj-input w-full rounded-md px-2.5 py-1.5 text-xs"
+                      />
                       <input
                         type="text"
-                        value={songKey}
-                        onChange={(e) => setSongKey(e.target.value)}
-                        placeholder="Tom (ex.: G)"
-                        className="nj-input rounded-md px-2.5 py-1.5 text-xs"
+                        value={songNotes}
+                        onChange={(e) => setSongNotes(e.target.value)}
+                        placeholder="Observação musical (ex.: abertura, transição)"
+                        className="nj-input w-full rounded-md px-2.5 py-1.5 text-xs"
                       />
-                      <input
-                        type="number"
-                        value={songBpm}
-                        onChange={(e) => setSongBpm(e.target.value)}
-                        placeholder="BPM"
-                        className="nj-input rounded-md px-2.5 py-1.5 text-xs"
-                      />
-                    </div>
-                    <input
-                      type="url"
-                      value={songRefUrl}
-                      onChange={(e) => setSongRefUrl(e.target.value)}
-                      placeholder="Link YouTube/Spotify para ensaio (opcional)"
-                      className="nj-input w-full rounded-md px-2.5 py-1.5 text-xs"
-                    />
-                    <input
-                      type="text"
-                      value={songNotes}
-                      onChange={(e) => setSongNotes(e.target.value)}
-                      placeholder="Observação musical (ex.: abertura, transição)"
-                      className="nj-input w-full rounded-md px-2.5 py-1.5 text-xs"
-                    />
-                    <button type="submit" className="nj-btn-primary inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs">
-                      <Plus className="h-3.5 w-3.5" />
-                      Incluir e notificar escalados
-                    </button>
-                  </form>
+                      <button type="submit" className="nj-btn-primary inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs">
+                        <Plus className="h-3.5 w-3.5" />
+                        Incluir e notificar escalados
+                      </button>
+                    </form>
+                  )}
 
                   <div>
                     <h3 className="font-serif text-xl font-semibold text-[var(--nj-ink)]">

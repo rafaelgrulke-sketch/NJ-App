@@ -1,9 +1,16 @@
 import {
+  collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  onSnapshot,
+  query,
   serverTimestamp,
   setDoc,
   Timestamp,
+  updateDoc,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import {
@@ -23,16 +30,19 @@ import {
   INITIAL_VIDEOS,
   INITIAL_WEEKLY_INFORMATIVO,
 } from '../data/initialData';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import {
+  BroadcastVideo,
   ChurchEvent,
   DiscographyProject,
   EbdClass,
   EbdLesson,
   MinistryUnit,
   ScheduleSlot,
+  WeeklyInformativoVideo,
 } from '../types/church';
 import {
+  makeSafeDocId,
   safeDateIso,
   safeHttpsOrRelativeMediaUrl,
   safeYoutubeId,
@@ -184,6 +194,169 @@ export function buildSchedulePayload(slot: Omit<ScheduleSlot, 'id'>) {
   });
 }
 
+export function buildBroadcastVideoPayload(video: Omit<BroadcastVideo, 'id'>) {
+  const ytId = safeYoutubeId(video.youtubeId) || 'dQw4w9WgXcQ';
+  return stripUndefined({
+    title: sanitizeText(video.title, 160),
+    preacher: sanitizeText(video.preacher, 120),
+    series: sanitizeText(video.series, 120),
+    date: safeDateIso(video.date),
+    duration: sanitizeText(video.duration, 40),
+    youtubeId: ytId,
+    isLive: Boolean(video.isLive),
+    description: sanitizeText(video.description, 1000),
+    visibility: 'public',
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// =========================================================
+// MODULAR CRUD & REAL-TIME SERVICES (Schedules & Videos)
+// =========================================================
+
+export async function getSchedulesByMinistry(ministryId: string): Promise<ScheduleSlot[]> {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'schedules'), where('ministryId', '==', sanitizeText(ministryId, 128)))
+    );
+    return snap.docs
+      .map((d) => ({ ...(d.data() as Omit<ScheduleSlot, 'id'>), id: d.id }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, `schedules?ministryId=${ministryId}`);
+  }
+}
+
+export async function createScheduleSlotDoc(slot: Omit<ScheduleSlot, 'id'>): Promise<string> {
+  const id = makeSafeDocId('sch');
+  try {
+    await setDoc(doc(db, 'schedules', id), buildSchedulePayload(slot));
+    return id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, `schedules/${id}`);
+  }
+}
+
+export async function updateScheduleSlotDoc(
+  slotId: string,
+  patch: Record<string, unknown>
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'schedules', slotId), {
+      ...stripUndefined(patch),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `schedules/${slotId}`);
+  }
+}
+
+export async function deleteScheduleSlotDoc(slotId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'schedules', slotId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `schedules/${slotId}`);
+  }
+}
+
+export function subscribeToMinistrySchedules(
+  ministryId: string,
+  onData: (slots: ScheduleSlot[]) => void,
+  onError?: (err: unknown) => void
+): () => void {
+  const q = query(collection(db, 'schedules'), where('ministryId', '==', ministryId));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs
+        .map((d) => ({ ...(d.data() as Omit<ScheduleSlot, 'id'>), id: d.id }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      onData(list);
+    },
+    (error) => {
+      if (onError) onError(error);
+      else handleFirestoreError(error, OperationType.LIST, `schedules?ministryId=${ministryId}`);
+    }
+  );
+}
+
+export async function getBroadcastVideos(): Promise<BroadcastVideo[]> {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'videos'), where('visibility', '==', 'public'))
+    );
+    return snap.docs
+      .map((d) => ({ ...(d.data() as Omit<BroadcastVideo, 'id'>), id: d.id }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, 'videos');
+  }
+}
+
+export async function createBroadcastVideoDoc(video: Omit<BroadcastVideo, 'id'>): Promise<string> {
+  const id = makeSafeDocId('vid');
+  try {
+    await setDoc(doc(db, 'videos', id), buildBroadcastVideoPayload(video));
+    return id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, `videos/${id}`);
+  }
+}
+
+export async function updateBroadcastVideoDoc(
+  videoId: string,
+  video: Omit<BroadcastVideo, 'id'>
+): Promise<void> {
+  try {
+    await setDoc(doc(db, 'videos', videoId), buildBroadcastVideoPayload(video));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `videos/${videoId}`);
+  }
+}
+
+export async function deleteBroadcastVideoDoc(videoId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'videos', videoId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `videos/${videoId}`);
+  }
+}
+
+export function subscribeToBroadcastVideos(
+  onData: (videos: BroadcastVideo[]) => void,
+  onError?: (err: unknown) => void
+): () => void {
+  return onSnapshot(
+    query(collection(db, 'videos'), where('visibility', '==', 'public')),
+    (snap) => {
+      const list = snap.docs
+        .map((d) => ({ ...(d.data() as Omit<BroadcastVideo, 'id'>), id: d.id }))
+        .sort((a, b) => b.date.localeCompare(a.date));
+      onData(list);
+    },
+    (error) => {
+      if (onError) onError(error);
+      else handleFirestoreError(error, OperationType.LIST, 'videos');
+    }
+  );
+}
+
+export async function saveWeeklyInformativoDoc(
+  uid: string,
+  payload: WeeklyInformativoVideo
+): Promise<void> {
+  try {
+    await setDoc(doc(db, 'settings', 'weeklyInformativo'), {
+      kind: 'weeklyInformativo',
+      payload,
+      updatedBy: uid,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, 'settings/weeklyInformativo');
+  }
+}
+
 /**
  * One-time initial Firestore seed executed ONLY when a verified Superadmin logs in
  * and settings/churchInfo does not yet exist in Firestore.
@@ -283,19 +456,7 @@ export async function seedInitialChurchDataIfEmpty(uid: string): Promise<boolean
 
     for (const vid of INITIAL_VIDEOS) {
       const { id, ...rest } = vid;
-      const ytId = safeYoutubeId(rest.youtubeId) || 'dQw4w9WgXcQ';
-      batch.set(doc(db, 'videos', id), stripUndefined({
-        title: sanitizeText(rest.title, 160),
-        preacher: sanitizeText(rest.preacher, 120),
-        series: sanitizeText(rest.series, 120),
-        date: safeDateIso(rest.date),
-        duration: sanitizeText(rest.duration, 40),
-        youtubeId: ytId,
-        isLive: Boolean(rest.isLive),
-        description: sanitizeText(rest.description, 1000),
-        visibility: 'public',
-        updatedAt: serverTimestamp(),
-      }));
+      batch.set(doc(db, 'videos', id), buildBroadcastVideoPayload(rest));
     }
 
     for (const notif of INITIAL_NOTIFICATIONS) {
@@ -348,7 +509,6 @@ export async function recordAuditEntry(
       createdAt: serverTimestamp(),
     });
   } catch (error) {
-    // Log structured error without blocking the primary UI operation
     console.error('Audit log write failed:', error);
   }
 }

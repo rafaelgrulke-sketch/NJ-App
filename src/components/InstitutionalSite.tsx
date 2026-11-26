@@ -6,6 +6,8 @@ import {
   Download,
   ExternalLink,
   HandHeart,
+  Lock,
+  LogOut,
   MapPin,
   Music,
   Play,
@@ -19,6 +21,7 @@ import { ChurchEvent, EnvironmentMode, PrayerPrivacy } from '../types/church';
 import { buildPixCopyPaste, downloadEbdLessonPdf, formatDatePtBR } from '../utils/formatters';
 import { AlbumCoverArt, BrandLogoMark, PixQrCodeSvg, SanctuaryArchitectureArt } from './EditorialArt';
 import { PWAInstallButton, ThemeToggleButton } from './PWAInstallButton';
+import { AdminLoginModal } from './ui/AdminLoginModal';
 import { AccessibleModal } from './ui/DesignPrimitives';
 import { EventArtCard, EventDetailModal } from './ui/EventArtCard';
 import { InformativoVideoPlayer } from './ui/InformativoVideoPlayer';
@@ -43,9 +46,13 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
     registerForEvent,
     submitPrayer,
     notify,
+    authUser,
+    hasScheduleAccess,
+    signOutUser,
   } = useChurch();
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [showInformativoModal, setShowInformativoModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
   const [pixPurpose, setPixPurpose] = useState('Oferta Voluntária');
   const [pixAmount, setPixAmount] = useState('');
@@ -785,15 +792,49 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
             <button type="button" onClick={() => onSwitchEnvironment('app', 'inicio')} className="hover:text-[var(--nj-accent-text)]">
               NJ App
             </button>
-            <button type="button" onClick={() => onSwitchEnvironment('app', 'ministerios')} className="hover:text-[var(--nj-accent-text)]">
-              Central de Ministérios
-            </button>
-            <button type="button" onClick={() => onSwitchEnvironment('admin')} className="hover:text-[var(--nj-accent-text)]">
-              Painel Admin
-            </button>
+            {hasScheduleAccess && (
+              <button type="button" onClick={() => onSwitchEnvironment('app', 'ministerios')} className="hover:text-[var(--nj-accent-text)]">
+                Minhas Escalas
+              </button>
+            )}
+            {authUser ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onSwitchEnvironment('admin')}
+                  className="inline-flex items-center gap-1.5 text-[var(--nj-accent-text)] hover:underline"
+                >
+                  <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                  Painel Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void signOutUser()}
+                  className="inline-flex items-center gap-1 hover:text-[var(--nj-accent-text)]"
+                >
+                  <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                  Sair
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowLoginModal(true)}
+                className="inline-flex items-center gap-1.5 hover:text-[var(--nj-accent-text)]"
+              >
+                <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                Área Administrativa / Login
+              </button>
+            )}
           </div>
         </div>
       </footer>
+
+      <AdminLoginModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSuccess={() => onSwitchEnvironment('admin')}
+      />
 
       {/* Event Detail & Registration Modal */}
       <EventDetailModal

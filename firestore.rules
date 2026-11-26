@@ -8,7 +8,7 @@ service cloud.firestore {
     }
 
     // =========================================================
-    // GLOBAL PRIMITIVES & ROLE HELPERS (Zero-Trust RBAC)
+    // GLOBAL PRIMITIVES & ROLE HELPERS (Zero-Trust RBAC + Per-Ministry Isolation)
     // =========================================================
     function incoming() {
       return request.resource.data;
@@ -42,8 +42,20 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    function currentUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function currentUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return currentUserData().role;
+    }
+
+    function isMemberOfMinistry(ministryId) {
+      return isSignedIn() &&
+        hasUserDoc() &&
+        ('ministryIds' in currentUserData()) &&
+        currentUserData().ministryIds is list &&
+        ministryId in currentUserData().ministryIds;
     }
 
     function isSuperAdminOrPastoral() {
@@ -119,6 +131,7 @@ service cloud.firestore {
           'photoUrl',
           'role',
           'ministryIds',
+          'departmentIds',
           'favoriteTrackIds',
           'eventReminders',
           'completedBibleDays',
@@ -133,6 +146,7 @@ service cloud.firestore {
         (!('photoUrl' in data) || isSafeUrlOrEmpty(data.photoUrl)) &&
         data.role in ['membro', 'voluntario', 'lider_ministerio', 'coord_ebd', 'admin_conteudo', 'pastoral', 'superadmin'] &&
         (!('ministryIds' in data) || isBoundedStringList(data.ministryIds, 10)) &&
+        (!('departmentIds' in data) || isBoundedStringList(data.departmentIds, 10)) &&
         (!('favoriteTrackIds' in data) || isBoundedStringList(data.favoriteTrackIds, 100)) &&
         (!('eventReminders' in data) || isBoundedStringList(data.eventReminders, 100)) &&
         (!('completedBibleDays' in data) || isBoundedStringList(data.completedBibleDays, 60)) &&
@@ -428,7 +442,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // 2. Users & RBAC (Pillar 6 PII Isolation + Anti-Escalation)
+    // 2. Users & RBAC (Pillar 6 PII Isolation + Anti-Escalation + Ministry Assignment)
     match /users/{userId} {
       allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isSuperAdminOrPastoral());
       allow list: if isSuperAdminOrPastoral();
@@ -438,6 +452,8 @@ service cloud.firestore {
         isValidUserProfile(incoming(), userId) &&
         incoming().createdAt == request.time &&
         incoming().email == request.auth.token.email &&
+        (!('ministryIds' in incoming()) || incoming().ministryIds.size() == 0) &&
+        (!('departmentIds' in incoming()) || incoming().departmentIds.size() == 0) &&
         (
           incoming().role == 'membro' ||
           (isBootstrapSuperAdmin() && incoming().role == 'superadmin')
@@ -447,13 +463,13 @@ service cloud.firestore {
         isValidUserProfile(incoming(), userId) &&
         incoming().uid == existing().uid &&
         incoming().createdAt == existing().createdAt && (
-          // Tier 1: Superadmin / Pastoral role & ministry assignment (primary superadmin protected)
+          // Tier 1: Superadmin / Pastoral role & ministry/department assignment
           (
             (existing().email != 'rafaelgrulke123@gmail.com' || isBootstrapSuperAdmin()) &&
-            incoming().diff(existing()).affectedKeys().hasOnly(['role', 'ministryIds', 'updatedAt']) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['role', 'ministryIds', 'departmentIds', 'updatedAt']) &&
             isSuperAdminOrPastoral()
           ) ||
-          // Tier 2: Owner updates personal non-privileged preferences only
+          // Tier 2: Owner updates personal non-privileged preferences only (NEVER role/ministryIds/departmentIds)
           (
             isOwner(userId) &&
             incoming().role == existing().role &&
@@ -596,10 +612,12 @@ service cloud.firestore {
       allow delete: if isVerifiedUser() && isValidId(projectId) && isSuperAdminOrPastoral();
     }
 
-    // 9. Ministries
+    // 9. Ministries (STRICTLY isolated to assigned ministry members & Superadmin/Pastoral)
     match /ministries/{ministryId} {
-      allow get: if isValidId(ministryId);
-      allow list: if resource.data.visibility == 'public';
+      allow get: if isSignedIn() && isValidId(ministryId) && (
+        isSuperAdminOrPastoral() || isMemberOfMinistry(ministryId)
+      );
+      allow list: if isSuperAdminOrPastoral() && resource.data.visibility == 'public';
       allow create: if isVerifiedUser() && isValidId(ministryId) && isValidMinistry(incoming()) && isSuperAdminOrPastoral();
       allow update: if isVerifiedUser() &&
         isValidId(ministryId) &&
@@ -608,19 +626,24 @@ service cloud.firestore {
           'slug', 'name', 'leader', 'description', 'arrivalTimeNote',
           'positions', 'departments', 'checklist', 'members', 'incidents', 'rehearsals', 'visibility', 'updatedAt'
         ]) &&
-        isAdminOrLeader();
+        (isSuperAdminOrPastoral() || (isAdminOrLeader() && isMemberOfMinistry(ministryId)));
       allow delete: if isVerifiedUser() && isValidId(ministryId) && isSuperAdminOrPastoral();
     }
 
-    // 10. Schedules (Ministry Volunteer Shifts)
+    // 10. Schedules (STRICTLY isolated per ministry: visitors & non-members DENIED, Mídia != Louvor)
     match /schedules/{scheduleId} {
-      allow get: if isValidId(scheduleId) && (
-        existing().scheduleStatus in ['publicada', 'em_andamento', 'concluida'] || isAdminOrLeader()
+      allow get: if isSignedIn() && isValidId(scheduleId) && (
+        isSuperAdminOrPastoral() || isMemberOfMinistry(existing().ministryId)
       );
-      allow list: if resource.data.scheduleStatus in ['publicada', 'em_andamento', 'concluida'] || isAdminOrLeader();
-      allow create: if isVerifiedUser() && isValidId(scheduleId) && isValidSchedule(incoming()) && isAdminOrLeader();
+      allow list: if isSignedIn() && (
+        isSuperAdminOrPastoral() || isMemberOfMinistry(resource.data.ministryId)
+      );
+      allow create: if isVerifiedUser() &&
+        isValidId(scheduleId) &&
+        isValidSchedule(incoming()) &&
+        (isSuperAdminOrPastoral() || (isAdminOrLeader() && isMemberOfMinistry(incoming().ministryId)));
       allow update: if isVerifiedUser() && isValidId(scheduleId) && isValidSchedule(incoming()) && (
-        // Tier 1: Leader / Admin manages full schedule slot
+        // Tier 1: Superadmin/Pastoral or Leader of THIS specific ministry manages schedule slot
         (
           incoming().diff(existing()).affectedKeys().hasOnly([
             'ministryId', 'ministryName', 'departmentId', 'departmentName',
@@ -628,10 +651,15 @@ service cloud.firestore {
             'positionName', 'volunteerName', 'volunteerUid', 'volunteerStatus',
             'swapReason', 'notes', 'updatedAt'
           ]) &&
-          isAdminOrLeader()
+          (
+            isSuperAdminOrPastoral() ||
+            (isAdminOrLeader() && isMemberOfMinistry(existing().ministryId) && isMemberOfMinistry(incoming().ministryId))
+          )
         ) ||
-        // Tier 2: Assigned volunteer responds (confirm/decline/request swap)
+        // Tier 2: Assigned volunteer who belongs to THIS ministry responds (confirm/decline/request swap)
         (
+          isMemberOfMinistry(existing().ministryId) &&
+          incoming().ministryId == existing().ministryId &&
           existing().scheduleStatus != 'cancelada' &&
           existing().scheduleStatus != 'concluida' &&
           (
@@ -642,39 +670,56 @@ service cloud.firestore {
           incoming().diff(existing()).affectedKeys().hasOnly(['volunteerStatus', 'swapReason', 'updatedAt'])
         )
       );
-      allow delete: if isVerifiedUser() && isValidId(scheduleId) && isAdminOrLeader();
+      allow delete: if isVerifiedUser() && isValidId(scheduleId) && (
+        isSuperAdminOrPastoral() || (isAdminOrLeader() && isMemberOfMinistry(existing().ministryId))
+      );
     }
 
-    // 11. Cult Repertoires (Louvor Worship Songs for Scheduled Services)
+    // 11. Cult Repertoires (STRICTLY Louvor ministry members & Superadmin/Pastoral ONLY)
     match /repertoires/{repertoireId} {
-      allow get: if isValidId(repertoireId);
-      allow list: if resource.data.visibility == 'public';
-      allow create: if isVerifiedUser() && isValidId(repertoireId) && isValidRepertoire(incoming()) && isAdminOrLeader();
+      allow get: if isSignedIn() && isValidId(repertoireId) && (
+        isSuperAdminOrPastoral() || isMemberOfMinistry('min-louvor')
+      );
+      allow list: if isSignedIn() && resource.data.visibility == 'public' && (
+        isSuperAdminOrPastoral() || isMemberOfMinistry('min-louvor')
+      );
+      allow create: if isVerifiedUser() && isValidId(repertoireId) && isValidRepertoire(incoming()) && (
+        isSuperAdminOrPastoral() || (isAdminOrLeader() && isMemberOfMinistry('min-louvor'))
+      );
       allow update: if isVerifiedUser() &&
         isValidId(repertoireId) &&
         isValidRepertoire(incoming()) &&
         incoming().diff(existing()).affectedKeys().hasOnly([
           'eventTitle', 'date', 'time', 'ministerName', 'musicalNotes', 'songs', 'visibility', 'updatedAt'
         ]) &&
-        isAdminOrLeader();
-      allow delete: if isVerifiedUser() && isValidId(repertoireId) && isAdminOrLeader();
+        (isSuperAdminOrPastoral() || (isAdminOrLeader() && isMemberOfMinistry('min-louvor')));
+      allow delete: if isVerifiedUser() && isValidId(repertoireId) && (
+        isSuperAdminOrPastoral() || (isAdminOrLeader() && isMemberOfMinistry('min-louvor'))
+      );
     }
 
-    // 12. Volunteer Unavailability
+    // 12. Volunteer Unavailability (Strictly own records or leaders of that ministry)
     match /unavailability/{recordId} {
       allow get: if isSignedIn() && isValidId(recordId) && (
-        existing().userId == request.auth.uid || isAdminOrLeader()
+        existing().userId == request.auth.uid ||
+        isSuperAdminOrPastoral() ||
+        (isAdminOrLeader() && isMemberOfMinistry(existing().ministryId))
       );
       allow list: if isSignedIn() && (
-        resource.data.userId == request.auth.uid || isAdminOrLeader()
+        resource.data.userId == request.auth.uid ||
+        isSuperAdminOrPastoral() ||
+        (isAdminOrLeader() && isMemberOfMinistry(resource.data.ministryId))
       );
       allow create: if isVerifiedUser() &&
         isValidId(recordId) &&
         isValidUnavailability(incoming()) &&
-        incoming().userId == request.auth.uid;
+        incoming().userId == request.auth.uid &&
+        (isSuperAdminOrPastoral() || isMemberOfMinistry(incoming().ministryId));
       allow update: if false;
       allow delete: if isVerifiedUser() && isValidId(recordId) && (
-        existing().userId == request.auth.uid || isAdminOrLeader()
+        existing().userId == request.auth.uid ||
+        isSuperAdminOrPastoral() ||
+        (isAdminOrLeader() && isMemberOfMinistry(existing().ministryId))
       );
     }
 
@@ -702,7 +747,7 @@ service cloud.firestore {
         isValidPrayer(incoming()) &&
         incoming().authorId == existing().authorId &&
         incoming().createdAt == existing().createdAt && (
-          // Tier 1: Pastoral / Superadmin updates prayer care status (with terminal lock except bootstrap superadmin)
+          // Tier 1: Pastoral / Superadmin updates prayer care status
           (
             (existing().status != 'atendido' || isBootstrapSuperAdmin()) &&
             incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
@@ -719,7 +764,7 @@ service cloud.firestore {
       allow delete: if isVerifiedUser() && isValidId(prayerId) && isSuperAdminOrPastoral();
     }
 
-    // 14. Broadcast Videos (YouTube Live & Recorded Sermons)
+    // 14. Broadcast Videos (YouTube Live & Recorded Sermons - Public Read, Admin Write Only)
     match /videos/{videoId} {
       allow get: if isValidId(videoId);
       allow list: if resource.data.visibility == 'public';
@@ -731,7 +776,7 @@ service cloud.firestore {
           'title', 'preacher', 'series', 'date', 'duration', 'youtubeId', 'isLive', 'description', 'visibility', 'updatedAt'
         ]) &&
         isAdminContentOrHigher();
-      allow delete: if isVerifiedUser() && isValidId(videoId) && isSuperAdminOrPastoral();
+      allow delete: if isVerifiedUser() && isValidId(videoId) && isAdminContentOrHigher();
     }
 
     // 15. App Notifications

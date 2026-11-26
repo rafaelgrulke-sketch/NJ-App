@@ -21,6 +21,7 @@ export interface RegisteredUser {
   photoUrl?: string;
   role: StoredUserRole;
   ministryIds?: string[];
+  departmentIds?: string[];
   favoriteTrackIds?: string[];
   eventReminders?: string[];
   completedBibleDays?: string[];
