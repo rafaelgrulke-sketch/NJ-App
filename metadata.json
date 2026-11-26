@@ -1,0 +1,6 @@
+{
+  "name": "Igreja Batista Nova Jerusalém",
+  "description": "Plataforma oficial da Igreja Batista Nova Jerusalém — site institucional, aplicativo dos membros (PWA), EBD Digital, Ministério Nova Jerusalém, escalas ministeriais e painel administrativo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

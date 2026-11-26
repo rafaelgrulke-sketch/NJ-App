@@ -1,0 +1,420 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Confirmed Typography Pairing: Sora (Display/Headings) + Inter (Body/UI) + IBM Plex Mono (Tabular Data) */
+  --font-display: "Sora", system-ui, -apple-system, sans-serif;
+  --font-serif: "Sora", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Official Nova Jerusalém Sampaio Brand Palette */
+  --color-nj-forest: #213228;
+  --color-nj-eucalyptus: #466053;
+  --color-nj-sage: #B1D3AE;
+  --color-nj-sage-gray: #5D705D;
+  --color-nj-olive: #716F56;
+  --color-nj-cream: #F3F1E9;
+}
+
+/* ============================================================================
+   DESIGN SYSTEM TOKENS — LIGHT MODE
+   60% Neutral Canvas (#F3F1E9) · 30% Structural Surfaces · 10% Brand Accent
+   ============================================================================ */
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --nj-canvas: #F3F1E9;
+  --nj-canvas-alt: #EAE6DA;
+  --nj-surface: #FFFFFF;
+  --nj-surface-alt: #F6F4EC;
+  --nj-surface-elevated: #FFFFFF;
+  --nj-surface-muted: #E7E3D7;
+  --nj-surface-gradient: linear-gradient(160deg, #FFFFFF 0%, #F9F8F3 100%);
+  --nj-surface-olive-gradient: linear-gradient(145deg, rgba(177, 211, 174, 0.24) 0%, rgba(113, 111, 86, 0.12) 100%);
+  --nj-header-bg: rgba(243, 241, 233, 0.92);
+  --nj-footer-bg: #E8E4D8;
+  --nj-input-bg: #FFFFFF;
+
+  /* Typography Ink */
+  --nj-ink: #1B2921;
+  --nj-ink-muted: #40574B;
+  --nj-ink-subtle: #5B6E5B;
+
+  /* Borders */
+  --nj-border: rgba(70, 96, 83, 0.18);
+  --nj-border-strong: rgba(70, 96, 83, 0.36);
+
+  /* Interactive Accents */
+  --nj-accent: #213228;
+  --nj-accent-hover: #31493B;
+  --nj-accent-active: #16221B;
+  --nj-accent-ink: #F3F1E9;
+  --nj-accent-text: #355243;
+  --nj-highlight: #716F56;
+
+  /* Event Category Badge (Confirmed: Verde-sálvia & Verde-floresta) */
+  --nj-badge-bg: #B1D3AE;
+  --nj-badge-ink: #1A2920;
+
+  /* High-Contrast EBD Paper Reading Surface */
+  --nj-paper-bg: #FFFFFF;
+  --nj-paper-ink: #1D2C23;
+  --nj-paper-muted: #466053;
+
+  /* Semantic Status Tokens (Always paired with icon/label) */
+  --nj-success: #256343;
+  --nj-success-bg: rgba(37, 99, 67, 0.10);
+  --nj-warning: #9A5B13;
+  --nj-warning-bg: rgba(154, 91, 19, 0.11);
+  --nj-danger: #B42318;
+  --nj-danger-bg: rgba(180, 35, 24, 0.10);
+  --nj-info: #2D5A4B;
+  --nj-info-bg: rgba(45, 90, 75, 0.10);
+
+  /* Standardized Radii, Shadows & Motion */
+  --nj-radius-sm: 0.5rem;
+  --nj-radius-md: 0.75rem;
+  --nj-radius-lg: 1rem;
+  --nj-radius-xl: 1.25rem;
+  --nj-shadow-sm: 0 1px 2px rgba(27, 41, 33, 0.06);
+  --nj-shadow-md: 0 8px 24px -8px rgba(27, 41, 33, 0.10);
+  --nj-shadow-lg: 0 20px 44px -16px rgba(27, 41, 33, 0.18);
+  --nj-ring: 0 0 0 2px var(--nj-canvas), 0 0 0 4px #466053;
+  --nj-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --nj-duration-fast: 150ms;
+  --nj-duration-base: 200ms;
+}
+
+/* ============================================================================
+   DESIGN SYSTEM TOKENS — DARK MODE
+   Verde-floresta (#213228) Dominant Canvas · Optical Compensation Active
+   ============================================================================ */
+.dark {
+  color-scheme: dark;
+
+  --nj-canvas: #1D2C23;
+  --nj-canvas-alt: #17241C;
+  --nj-surface: #25382D;
+  --nj-surface-alt: #1F3026;
+  --nj-surface-elevated: #2B4034;
+  --nj-surface-muted: #19271F;
+  --nj-surface-gradient: linear-gradient(160deg, rgba(64, 90, 76, 0.42) 0%, rgba(29, 44, 35, 0.96) 100%);
+  --nj-surface-olive-gradient: linear-gradient(145deg, rgba(113, 111, 86, 0.28) 0%, rgba(70, 96, 83, 0.32) 55%, rgba(29, 44, 35, 0.96) 100%);
+  --nj-header-bg: rgba(29, 44, 35, 0.92);
+  --nj-footer-bg: #15211A;
+  --nj-input-bg: #16231B;
+
+  --nj-ink: #F3F1E9;
+  --nj-ink-muted: rgba(243, 241, 233, 0.80);
+  --nj-ink-subtle: rgba(243, 241, 233, 0.62);
+
+  --nj-border: rgba(177, 211, 174, 0.16);
+  --nj-border-strong: rgba(177, 211, 174, 0.34);
+
+  --nj-accent: #B1D3AE;
+  --nj-accent-hover: #C2DFC0;
+  --nj-accent-active: #9BC497;
+  --nj-accent-ink: #1B2921;
+  --nj-accent-text: #B1D3AE;
+  --nj-highlight: #B1D3AE;
+
+  --nj-badge-bg: #B1D3AE;
+  --nj-badge-ink: #1B2921;
+
+  --nj-paper-bg: #F3F1E9;
+  --nj-paper-ink: #1D2C23;
+  --nj-paper-muted: #466053;
+
+  --nj-success: #8FD49E;
+  --nj-success-bg: rgba(143, 212, 158, 0.14);
+  --nj-warning: #F5B971;
+  --nj-warning-bg: rgba(245, 185, 113, 0.14);
+  --nj-danger: #F28B82;
+  --nj-danger-bg: rgba(242, 139, 130, 0.14);
+  --nj-info: #B1D3AE;
+  --nj-info-bg: rgba(177, 211, 174, 0.14);
+
+  --nj-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --nj-shadow-md: 0 12px 28px -10px rgba(0, 0, 0, 0.42);
+  --nj-shadow-lg: 0 24px 52px -16px rgba(0, 0, 0, 0.58);
+  --nj-ring: 0 0 0 2px var(--nj-canvas), 0 0 0 4px #B1D3AE;
+}
+
+/* ============================================================================
+   BASE TYPOGRAPHY & FLUID H1–H6 HIERARCHY (SORA + INTER)
+   ============================================================================ */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+    background-color: var(--nj-canvas);
+    color: var(--nj-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--nj-canvas);
+    color: var(--nj-ink);
+    font-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
+    line-height: 1.6;
+    transition: background-color var(--nj-duration-base) var(--nj-ease),
+      color var(--nj-duration-base) var(--nj-ease);
+  }
+
+  .dark body {
+    letter-spacing: 0.008em;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display, .font-editorial {
+    font-family: var(--font-display);
+    text-wrap: balance;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    font-size: clamp(1.85rem, 3.2vw, 3.15rem);
+    line-height: 1.1;
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: clamp(1.375rem, 2.2vw, 2.05rem);
+    line-height: 1.18;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: clamp(1.125rem, 1.5vw, 1.4rem);
+    line-height: 1.25;
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: clamp(1rem, 1.15vw, 1.125rem);
+    line-height: 1.3;
+    font-weight: 600;
+  }
+
+  h5, h6 {
+    font-size: 0.9375rem;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+
+  p {
+    max-width: 72ch;
+  }
+
+  :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: var(--nj-ring);
+  }
+
+  select option {
+    background-color: var(--nj-canvas);
+    color: var(--nj-ink);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   REUSABLE DESIGN SYSTEM PRIMITIVES (ALL INTERACTIVE STATES)
+   ============================================================================ */
+.nj-card {
+  background: var(--nj-surface-gradient);
+  border: 1px solid var(--nj-border);
+  border-radius: var(--nj-radius-lg);
+  box-shadow: var(--nj-shadow-sm);
+  transition: border-color var(--nj-duration-fast) var(--nj-ease),
+    transform var(--nj-duration-base) var(--nj-ease),
+    box-shadow var(--nj-duration-base) var(--nj-ease);
+}
+
+.nj-card-interactive:hover {
+  border-color: var(--nj-border-strong);
+  box-shadow: var(--nj-shadow-md);
+  transform: translateY(-2px);
+}
+
+.nj-card-olive {
+  background: var(--nj-surface-olive-gradient);
+  border: 1px solid var(--nj-border-strong);
+  border-radius: var(--nj-radius-lg);
+  box-shadow: var(--nj-shadow-sm);
+}
+
+.nj-paper {
+  background-color: var(--nj-paper-bg);
+  color: var(--nj-paper-ink);
+  border: 1px solid var(--nj-border);
+  border-radius: var(--nj-radius-lg);
+  box-shadow: var(--nj-shadow-sm);
+}
+
+.nj-btn-primary {
+  background-color: var(--nj-accent);
+  color: var(--nj-accent-ink);
+  font-weight: 600;
+  border-radius: var(--nj-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--nj-duration-fast) var(--nj-ease),
+    transform var(--nj-duration-fast) var(--nj-ease),
+    opacity var(--nj-duration-fast) var(--nj-ease);
+}
+.nj-btn-primary:hover:not(:disabled) {
+  background-color: var(--nj-accent-hover);
+}
+.nj-btn-primary:active:not(:disabled) {
+  background-color: var(--nj-accent-active);
+  transform: scale(0.98);
+}
+.nj-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nj-btn-secondary {
+  background-color: transparent;
+  color: var(--nj-ink);
+  border: 1px solid var(--nj-border-strong);
+  font-weight: 500;
+  border-radius: var(--nj-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--nj-duration-fast) var(--nj-ease),
+    border-color var(--nj-duration-fast) var(--nj-ease),
+    transform var(--nj-duration-fast) var(--nj-ease);
+}
+.nj-btn-secondary:hover:not(:disabled) {
+  background-color: rgba(177, 211, 174, 0.14);
+  border-color: var(--nj-accent);
+}
+.nj-btn-secondary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.nj-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nj-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border-radius: var(--nj-radius-sm);
+  border: 1px solid var(--nj-border);
+  background-color: var(--nj-surface);
+  color: var(--nj-ink);
+  cursor: pointer;
+  transition: background-color var(--nj-duration-fast) var(--nj-ease),
+    border-color var(--nj-duration-fast) var(--nj-ease),
+    transform var(--nj-duration-fast) var(--nj-ease);
+}
+.nj-icon-btn:hover:not(:disabled) {
+  border-color: var(--nj-accent);
+  background-color: rgba(177, 211, 174, 0.14);
+}
+.nj-icon-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.nj-input {
+  width: 100%;
+  border-radius: var(--nj-radius-sm);
+  border: 1px solid var(--nj-border-strong);
+  background-color: var(--nj-input-bg);
+  color: var(--nj-ink);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  transition: border-color var(--nj-duration-fast) var(--nj-ease),
+    box-shadow var(--nj-duration-fast) var(--nj-ease);
+}
+.nj-input::placeholder {
+  color: var(--nj-ink-subtle);
+}
+.nj-input:hover:not(:disabled) {
+  border-color: var(--nj-accent-text);
+}
+.nj-input:focus {
+  outline: none;
+  border-color: var(--nj-accent);
+  box-shadow: var(--nj-ring);
+}
+.nj-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.nj-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: var(--nj-surface-muted);
+  border: 1px solid var(--nj-border);
+  border-radius: var(--nj-radius-md);
+  padding: 0.25rem;
+}
+
+.nj-tab-active {
+  background-color: var(--nj-accent);
+  color: var(--nj-accent-ink);
+  font-weight: 600;
+  box-shadow: var(--nj-shadow-sm);
+}
+
+.nj-tab-idle {
+  color: var(--nj-ink-muted);
+  transition: color var(--nj-duration-fast) var(--nj-ease),
+    background-color var(--nj-duration-fast) var(--nj-ease);
+}
+.nj-tab-idle:hover {
+  color: var(--nj-ink);
+  background-color: rgba(177, 211, 174, 0.12);
+}
+
+/* Status Banner Helpers */
+.nj-status-warning {
+  background-color: var(--nj-warning-bg);
+  color: var(--nj-warning);
+  border: 1px solid currentColor;
+}
+.nj-status-success {
+  background-color: var(--nj-success-bg);
+  color: var(--nj-success);
+  border: 1px solid currentColor;
+}
+.nj-status-danger {
+  background-color: var(--nj-danger-bg);
+  color: var(--nj-danger);
+  border: 1px solid currentColor;
+}
+
+/* Reduced Motion Accessibility (WCAG 2.2 AA) */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}

@@ -1,0 +1,1075 @@
+# ATUALIZAÇÃO DO PROJETO — APLICATIVO NOVA JERUSALÉM
+
+Precisamos ampliar o projeto do aplicativo Nova Jerusalém, transformando-o em uma plataforma digital institucional completa, integrando informações da igreja, comunicação, conteúdos musicais, Escola Bíblica Dominical e gerenciamento de ministérios e escalas.
+
+Todas as funcionalidades deverão seguir uma arquitetura modular, escalável, segura e preparada para futuras expansões.
+
+## 1. IDENTIDADE VISUAL
+
+O aplicativo deverá seguir a identidade visual inspirada nas publicações do Instagram oficial da Igreja Nova Jerusalém (@novajerusalemsampaio), mantendo uma aparência moderna, elegante, minimalista e acolhedora.
+
+### Paleta de cores
+
+- Verde-floresta: `#213228` — cor principal.
+- Verde-eucalipto: `#466053` — superfícies secundárias e cartões.
+- Verde-sálvia: `#B1D3AE` — botões, destaques e elementos interativos.
+- Verde acinzentado: `#5D705D` — elementos complementares.
+- Oliva terroso: `#716F56` — gradientes e detalhes.
+- Branco suave: `#F3F1E9` — textos e contraste.
+
+### Diretrizes de design
+
+- Utilizar tipografia editorial e moderna.
+- Utilizar Cormorant Garamond ou Playfair Display para títulos especiais.
+- Utilizar Poppins ou Inter para textos e interfaces.
+- Trabalhar com gradientes suaves e texturas discretas.
+- Criar um Design System próprio.
+- Padronizar componentes, botões, ícones, espaçamentos e cartões.
+- Implementar tema claro e escuro, respeitando a identidade institucional.
+- Garantir responsividade, acessibilidade e fluidez na navegação.
+- Evitar interfaces genéricas e excesso de elementos decorativos.
+
+A paleta é uma proposta inicial e deverá ser validada pela liderança da igreja.
+
+## 2. DADOS INSTITUCIONAIS
+
+Cadastrar inicialmente as seguintes informações, sujeitas à confirmação pela secretaria:
+
+- Nome: Igreja Batista em Renovação Espiritual Nova Jerusalém.
+- Nome de divulgação: Nova Jerusalém Sampaio.
+- Fundação: 19 de outubro de 1985.
+- Pastor fundador: Manoel Silva.
+- Pastor presidente informado: Samuel Silva.
+- Início da presidência: 11 de outubro de 2020.
+- Endereço: Rua do Engenho Novo, 229.
+- Bairro: Sampaio.
+- Cidade: Rio de Janeiro – RJ.
+- CEP: 20961-100.
+- Telefone divulgado no site: (21) 2501-1748.
+- Telefone alternativo divulgado no YouTube: (21) 2501-4522.
+- E-mail divulgado: [contato@novajerusalemsampaio.com.br](mailto\:contato@novajerusalemsampaio.com.br).
+
+### Canais digitais
+
+- Site: [https://igrejanovajerusalem.com.br/](https://igrejanovajerusalem.com.br/)
+- Instagram: [https://www.instagram.com/novajerusalemsampaio/](https://www.instagram.com/novajerusalemsampaio/)
+- YouTube: [https://www.youtube.com/channel/UCFRiks_8zTRq8zcuUq0sjJw](https://www.youtube.com/channel/UCFRiks_8zTRq8zcuUq0sjJw)
+- Facebook: @novajerusalemsampaio.
+
+Criar uma página denominada **Conheça nossa igreja**, contendo:
+
+- História da igreja.
+- Missão, visão e valores.
+- Liderança pastoral.
+- Informações institucionais.
+- Fotografias da igreja.
+- Endereço e localização.
+- Integração com Google Maps.
+- Canais oficiais de atendimento.
+- Redes sociais.
+- Programação semanal.
+
+Todas essas informações deverão ser editáveis pelo painel administrativo, sem necessidade de alteração no código-fonte.
+
+## 3. PROGRAMAÇÃO SEMANAL
+
+Cadastrar inicialmente a programação divulgada no site institucional:
+
+| Dia          | Programação              | Horário        |
+| ------------ | ------------------------ | -------------- |
+| Domingo      | Escola Bíblica Dominical | 09h às 10h     |
+| Domingo      | Culto Pastoral           | 10h10          |
+| Domingo      | Nossa Celebração         | 19h00          |
+| Quinta-feira | Culto do Renovo          | 19h30          |
+
+Os horários deverão ser confirmados pela liderança antes da publicação.
+
+O sistema deverá permitir:
+
+- Cadastro de programações recorrentes.
+- Cadastro de eventos especiais.
+- Alteração de horários.
+- Cancelamento e reagendamento de eventos.
+- Cadastro de congressos e conferências.
+- Calendário mensal e anual.
+- Notificações de eventos.
+- Compartilhamento de programações.
+- Adição de eventos ao calendário pessoal.
+- Vinculação de cultos e eventos às escalas dos ministérios.
+
+## 4. TELA INICIAL DO APLICATIVO
+
+A tela inicial deverá apresentar informações dinâmicas, priorizando os conteúdos mais relevantes para o usuário.
+
+Implementar:
+
+- Saudação personalizada.
+- Próximo culto.
+- Programação da semana.
+- Eventos em destaque.
+- Comunicados importantes.
+- Transmissões ao vivo.
+- Últimas pregações.
+- Lição atual da EBD.
+- Lançamentos do Ministério Nova Jerusalém.
+- Acesso rápido aos ministérios.
+- Próximas escalas do usuário autenticado.
+- Central de notificações.
+- Acesso às redes sociais.
+
+O conteúdo deverá ser gerenciado pelo painel administrativo.
+
+## 5. MIN. NOVA JERUSALÉM
+
+Criar uma aba musical denominada **Min. Nova Jerusalém**, dedicada ao conteúdo artístico do Ministério Nova Jerusalém.
+
+A proposta é desenvolver uma experiência semelhante a uma plataforma musical, respeitando a identidade visual da igreja e os direitos autorais das obras.
+
+### Funcionalidades
+
+- Discografia completa.
+- Álbuns.
+- Singles.
+- EPs.
+- Lançamentos recentes.
+- Capas dos álbuns.
+- Listagem de músicas.
+- Pesquisa por música ou álbum.
+- Videoclipes.
+- Links oficiais de streaming.
+- Integração com o Ministério de Louvor.
+- Possibilidade de adicionar músicas aos repertórios dos cultos.
+
+### Catálogo musical inicial
+
+Utilizar como referência inicial os seguintes projetos, validando os metadados e as datas junto às plataformas oficiais:
+
+- Bom É Louvar a Deus — 2001.
+- Tua Unção — 2002.
+- Discípulos Teus — 2003.
+- Em Nome do Senhor — 2005.
+- Gerados para Adorar — 2013.
+- Agora Sonho — 2014.
+- Lugar da Adoração — 2016.
+- Aba Pai — 2019.
+- Lugar do Encontro — 2020.
+- Saudades do Jardim — 2021.
+- Te Aguardamos — 2025.
+
+O catálogo não deverá ficar limitado a essa relação. A integração deverá buscar os demais trabalhos disponíveis nas plataformas oficiais.
+
+### Dados para integração musical
+
+**Apple Music**
+
+- Artist ID: `635009226`
+- URL: [https://music.apple.com/br/artist/635009226](https://music.apple.com/br/artist/635009226)
+- Documentação: [https://developer.apple.com/documentation/applemusicapi](https://developer.apple.com/documentation/applemusicapi)
+
+**Spotify**
+
+- Álbum de referência: Gerados para Adorar.
+- Album ID: `1c21Tp4mSeEoQrL1tzW6Zi`
+- URL: [https://open.spotify.com/album/1c21Tp4mSeEoQrL1tzW6Zi](https://open.spotify.com/album/1c21Tp4mSeEoQrL1tzW6Zi)
+- Documentação: [https://developer.spotify.com/documentation/web-api](https://developer.spotify.com/documentation/web-api)
+
+Localizar e validar o Artist ID oficial do Ministério Nova Jerusalém antes de implementar a integração definitiva.
+
+**Amazon Music**
+
+- Artist ID: `B01GED9GYW`
+- URL: [https://music.amazon.com/artists/B01GED9GYW](https://music.amazon.com/artists/B01GED9GYW)
+
+**YouTube — Ministério Nova Jerusalém**
+
+- Channel ID informado: `UCFu1wmexgzsm_FDHzQUmmFQ`
+- URL: [https://www.youtube.com/@MinisterioNovaJerusalem](https://www.youtube.com/@MinisterioNovaJerusalem)
+
+**YouTube — Igreja Nova Jerusalém**
+
+- Channel ID informado: `UCFRiks_8zTRq8zcuUq0sjJw`
+- Documentação: [https://developers.google.com/youtube/v3](https://developers.google.com/youtube/v3)
+
+**Instagram do Ministério**
+
+- [https://www.instagram.com/m_novajerusalem/](https://www.instagram.com/m_novajerusalem/)
+
+**MK Music**
+
+- [http://mkmusic.mk/ministerionovajerusalem](http://mkmusic.mk/ministerionovajerusalem)
+
+Todos os identificadores deverão ser validados antes da integração em produção.
+
+### Implementação técnica
+
+Utilizar, conforme disponibilidade e permissões:
+
+- Spotify Web API.
+- Spotify Embed.
+- Apple Music API.
+- YouTube Data API v3.
+- YouTube IFrame Player API.
+
+Criar uma camada de serviços responsável pela integração com as plataformas externas.
+
+As chaves de API e credenciais privadas deverão permanecer exclusivamente no backend, utilizando variáveis de ambiente.
+
+Não realizar downloads não autorizados de músicas, extração de áudio do YouTube ou armazenamento de arquivos protegidos por direitos autorais.
+
+A reprodução deverá ocorrer através de players oficiais ou direcionamento às plataformas de streaming, conforme seus respectivos termos de utilização.
+
+## 6. CENTRAL DE MINISTÉRIOS
+
+Criar uma área denominada **Ministérios**, destinada à organização interna das equipes de serviço da igreja.
+
+Cada ministério deverá possuir seu próprio ambiente, liderança, membros, funções, escalas, permissões e configurações.
+
+Inicialmente, implementar cinco ministérios independentes:
+
+1. Ministério de Mídia.
+2. Ministério de Som.
+3. Relações Públicas.
+4. Ministério de Introdução.
+5. Ministério de Louvor.
+
+A arquitetura deverá permitir o cadastro de novos ministérios futuramente pelo painel administrativo, sem necessidade de modificar o código.
+
+O Ministério de Mídia deverá possuir três subdivisões internas:
+
+Telão.
+
+Transmissão.
+
+Social Media.
+
+Cada subdivisão deverá possuir suas próprias funções, integrantes, escalas, disponibilidade e histórico de serviços, permanecendo vinculada ao Ministério de Mídia.
+
+1. TELÃO
+
+Equipe responsável pela projeção de conteúdos durante os cultos e eventos da igreja.
+
+Composição da escala
+
+Função
+
+Quantidade
+
+Operador de telão
+
+1
+
+Total
+
+1
+
+Responsabilidades
+
+Projeção das letras das músicas.
+
+Exibição de versículos bíblicos.
+
+Apresentação de avisos e comunicados.
+
+Reprodução de vídeos institucionais.
+
+Exibição de apresentações e materiais gráficos.
+
+Organização prévia dos conteúdos do culto.
+
+O sistema deverá disponibilizar apenas uma vaga de operador de telão por escala, seguindo o modelo atual da igreja.
+
+2. TRANSMISSÃO
+
+Equipe responsável pela captação de imagens, operação técnica e transmissão ao vivo dos cultos e eventos da Nova Jerusalém.
+
+Composição da escala
+
+Função
+
+Quantidade
+
+Operador de câmera central esquerda
+
+1
+
+Operador de câmera central direita
+
+1
+
+Operador de câmera móvel
+
+1
+
+Operador de corte
+
+1
+
+Operador de software — vMix
+
+1
+
+Total
+
+5
+
+Responsabilidades por função
+
+Câmera central esquerda: responsável pela operação da câmera posicionada na região central esquerda.
+
+Câmera central direita: responsável pela operação da câmera posicionada na região central direita.
+
+Câmera móvel: responsável pela captação de imagens dinâmicas durante o culto.
+
+Operador de corte: responsável pela seleção e alternância das imagens das câmeras durante a transmissão.
+
+Operador de vMix: responsável pela operação do software de transmissão, gerenciamento das fontes de vídeo, elementos gráficos e acompanhamento técnico da transmissão ao vivo.
+
+O operador de corte e o operador de vMix deverão ser cadastrados como funções distintas, ocupadas por pessoas diferentes na escala.
+
+Funcionalidades específicas
+
+Distribuição dos operadores por câmera.
+
+Escala individual por função.
+
+Horários de chegada.
+
+Checklist de equipamentos.
+
+Checklist pré-transmissão.
+
+Roteiro de transmissão.
+
+Orientações técnicas.
+
+Registro de ocorrências.
+
+Histórico de transmissões.
+
+3. SOCIAL MEDIA
+
+Equipe responsável pela cobertura fotográfica, produção de conteúdo e publicação nas redes sociais oficiais da igreja.
+
+Composição da escala
+
+Função
+
+Quantidade
+
+Fotografia
+
+1
+
+Stories
+
+1
+
+Postagens
+
+1
+
+Total
+
+3
+
+Responsabilidades por função
+
+Fotografia: responsável pelo registro fotográfico dos cultos, eventos e demais atividades da igreja.
+
+Stories: responsável pela captação e produção de conteúdos destinados aos stories, incluindo vídeos, registros dos momentos do culto e cobertura em tempo real.
+
+Postagens: responsável pela organização e publicação dos conteúdos produzidos pela equipe nas redes sociais oficiais da igreja.
+
+As três funções deverão ser independentes, com um integrante designado para cada atividade.
+
+Funcionalidades específicas
+
+Escalas de Social Media.
+
+Planejamento de cobertura dos cultos e eventos.
+
+Orientações de conteúdo.
+
+Compartilhamento de materiais gráficos.
+
+Checklist de cobertura.
+
+Organização de fotografias e vídeos.
+
+Calendário de publicações.
+
+Histórico de serviços.
+
+4. COMPOSIÇÃO GERAL DA ESCALA DE MÍDIA
+
+Equipe
+
+Quantidade de integrantes
+
+Telão
+
+1
+
+Transmissão
+
+5
+
+Social Media
+
+3
+
+Total por culto
+
+9
+
+A liderança de Mídia deverá conseguir visualizar tanto a escala completa quanto as escalas individuais de cada subdivisão.
+
+5. ORGANIZAÇÃO DA INTERFACE
+
+Ao acessar o Ministério de Mídia, o usuário deverá encontrar as seguintes áreas:
+
+Visão geral.
+
+Telão.
+
+Transmissão.
+
+Social Media.
+
+Escalas.
+
+Integrantes.
+
+Disponibilidade.
+
+Comunicados.
+
+Histórico.
+
+Cada subdivisão deverá possuir uma página própria, com seus respectivos integrantes, funções e escalas.
+
+A liderança deverá possuir uma visão consolidada das três equipes, permitindo identificar vagas não preenchidas, confirmações pendentes e necessidades de substituição.
+
+6. REGRAS DE FUNCIONAMENTO
+
+Cada função deverá possuir uma vaga individual por escala.
+
+Cada integrante poderá ser habilitado para uma ou mais funções.
+
+O integrante poderá participar de diferentes subdivisões da Mídia.
+
+O sistema deverá impedir que uma mesma pessoa seja escalada simultaneamente para funções incompatíveis.
+
+A liderança poderá montar escalas semanais e mensais.
+
+As escalas poderão ser publicadas individualmente por subdivisão ou de maneira consolidada.
+
+Os integrantes deverão receber notificações referentes às suas respectivas funções.
+
+O sistema deverá apresentar as vagas preenchidas e as vagas pendentes.
+
+Permitir confirmação, recusa e solicitação de substituição.
+
+Permitir exportação em PDF da escala completa ou de cada subdivisão.
+
+Permitir compartilhamento das escalas pelo WhatsApp.
+
+Manter o histórico de participação de cada integrante.
+
+Permitir que a liderança autorizada ajuste futuramente a quantidade de vagas e funções, caso a estrutura da igreja seja modificada.
+
+7. ATUALIZAÇÃO DA ARQUITETURA DO BANCO DE DADOS
+
+Adaptar a estrutura existente para permitir subdivisões internas dentro dos ministérios, sem criar bancos de dados independentes.
+
+Adicionar ou adaptar as seguintes tabelas:
+
+ministry_departments — subdivisões dos ministérios.
+
+department_members — integrantes de cada subdivisão.
+
+ministry_positions — funções vinculadas aos ministérios e suas subdivisões.
+
+member_positions — funções para as quais cada integrante está habilitado.
+
+schedule_templates — modelos predefinidos de escalas.
+
+schedule_template_positions — funções e quantidade de vagas de cada modelo.
+
+schedules — escalas vinculadas aos ministérios e subdivisões.
+
+schedule_assignments — distribuição dos integrantes por função.
+
+Utilizar o identificador department_id nos registros que necessitem de separação por subdivisão.
+
+Criar os modelos iniciais de escala:
+
+Telão: 1 vaga.
+
+Transmissão: 5 vagas.
+
+Social Media: 3 vagas.
+
+Implementar validações no backend para evitar duplicidade de funções, conflitos de horários e atribuições indevidas.
+
+As políticas de Row Level Security deverão respeitar as permissões dos integrantes, responsáveis pelas subdivisões e liderança geral de Mídia.
+
+A estrutura deverá ser dinâmica, permitindo que outros ministérios também possuam subdivisões futuramente, caso necessário.
+## 8. MINISTÉRIO DE SOM
+
+Criar uma área independente da equipe de mídia, destinada exclusivamente à operação de áudio.
+
+### Funções iniciais
+
+- Técnico de áudio.
+- Operador de PA.
+- Operador de monitor.
+- Operador de áudio da transmissão.
+- Auxiliar de som.
+- Apoio técnico de palco.
+
+### Funcionalidades específicas
+
+- Escalas de som.
+- Horários de passagem de som.
+- Checklist de microfones.
+- Checklist de equipamentos.
+- Distribuição de responsabilidades.
+- Orientações técnicas.
+- Registro de problemas e ocorrências.
+- Histórico de serviços.
+
+## 9. RELAÇÕES PÚBLICAS
+
+Criar uma área exclusiva para a equipe responsável pela recepção, acolhimento e orientação dos membros e visitantes.
+
+### Funções iniciais
+
+Líder das Relações públicas
+- Recepção.
+
+
+
+### Funcionalidades específicas
+
+- Escalas de recepção.
+- Distribuição dos pontos de atendimento.
+- Organização das equipes.
+- Orientações para eventos.
+- Horários de chegada.
+- Comunicados internos.
+- Histórico de serviços.
+
+são 4 pessoas por escala de culto
+
+## 10. MINISTÉRIO DE INTRODUÇÃO
+
+Criar uma área exclusiva para a equipe responsável pela organização do estacionamento da igreja, incluindo a entrada, saída e orientação dos veículos.
+
+são 4 a 5 introdutores por escala
+
+### Funções iniciais
+
+Líder da Introdução
+Introdutor
+
+### Funcionalidades específicas
+
+- Escalas de estacionamento.
+- Distribuição dos postos de serviço.
+- Horários de chegada.
+- Orientações operacionais.
+- Comunicados internos.
+- Registro de ocorrências.
+- Histórico de serviços.
+
+## 11. MINISTÉRIO DE LOUVOR
+
+Criar uma área exclusiva para a organização dos músicos, ministros e vocalistas da igreja.
+
+### Funções iniciais
+
+- Líder de louvor.
+- Ministro de louvor.
+- Backing vocal.
+- Tecladista.
+- Guitarrista.
+- Baixista.
+- Baterista.
+
+### Funcionalidades específicas
+
+- Escalas de músicos e vocalistas.
+- Calendário de ensaios.
+- Repertório por culto.
+- Ordem das músicas.
+- Definição de tonalidades.
+- BPM das músicas.
+- Links de referência.
+- Letras e cifras autorizadas.
+- Orientações musicais.
+- Observações individuais.
+- Histórico de repertórios.
+- Integração com a aba Min. Nova Jerusalém.
+
+O líder deverá conseguir montar um repertório e disponibilizá-lo para todos os integrantes escalados naquele culto.
+
+As funções apresentadas para todos os ministérios são sugestões iniciais e deverão ser configuráveis de acordo com a organização real da igreja.
+
+os backing vocal por escala de culto são 4, acompanhados por um ministro de louvor e um tecladista, um guitarrista, um baixista e um baterista
+
+## 12. SISTEMA DE ESCALAS
+
+Desenvolver um sistema completo de gerenciamento de escalas, inspirado nas necessidades reais das equipes de serviço da igreja.
+
+Cada ministério deverá possuir suas próprias escalas, sem misturar seus integrantes, funções ou responsabilidades com os demais ministérios.
+
+Entretanto, todas as escalas deverão estar vinculadas ao calendário central de cultos e eventos.
+
+### Fluxo de funcionamento
+
+1. A administração cadastra um culto ou evento.
+2. O evento fica disponível para os ministérios participantes.
+3. Cada líder monta a escala da sua equipe.
+4. O líder define os integrantes e suas respectivas funções.
+5. A escala é salva inicialmente como rascunho.
+6. Após a publicação, os integrantes recebem uma notificação.
+7. Os voluntários confirmam ou recusam sua participação.
+8. A liderança acompanha as confirmações.
+9. Caso necessário, são realizadas substituições.
+10. Após o evento, a escala permanece disponível no histórico.
+
+### Funcionalidades gerais
+
+- Escalas semanais e mensais.
+- Visualização em calendário.
+- Visualização em lista.
+- Criação de escalas recorrentes.
+- Duplicação de escalas anteriores.
+- Disponibilidade dos voluntários.
+- Bloqueio de datas indisponíveis.
+- Confirmação de participação.
+- Recusa de participação.
+- Solicitação de substituição.
+- Aprovação de trocas pela liderança.
+- Identificação de conflitos de horários.
+- Notificações automáticas.
+- Lembretes antes dos cultos.
+- Observações gerais e individuais.
+- Exportação de escalas em PDF.
+- Compartilhamento pelo WhatsApp.
+- Histórico de participação.
+- Registro de presença, quando necessário.
+
+### Status das escalas
+
+- Rascunho.
+- Publicada.
+- Em andamento.
+- Concluída.
+- Cancelada.
+
+### Status dos voluntários
+
+- Aguardando confirmação.
+- Confirmado.
+- Recusado.
+- Substituição solicitada.
+- Substituído.
+- Presente.
+- Ausente.
+
+### Minhas escalas
+
+Criar uma área pessoal denominada **Minhas escalas**, na qual o usuário poderá consultar todos os seus compromissos, independentemente do ministério ao qual pertence.
+
+Um mesmo usuário poderá participar de mais de um ministério utilizando uma única conta.
+
+O sistema deverá identificar conflitos quando um integrante estiver escalado para funções incompatíveis no mesmo horário.
+
+## 13. ESCOLA BÍBLICA DOMINICAL — EBD
+
+Criar uma área exclusiva para a Escola Bíblica Dominical da Nova Jerusalém.
+
+Como a própria igreja desenvolve suas lições, o aplicativo deverá disponibilizar esse conteúdo digitalmente, facilitando o acesso dos alunos e professores.
+
+### Funcionalidades
+
+- Lição atual em destaque.
+- Leitura online.
+- Download das lições em PDF.
+- Biblioteca de lições anteriores.
+- Organização por trimestre, tema e ano.
+- Pesquisa de estudos.
+- Cadastro de classes.
+- Cadastro de professores.
+- Localização das salas.
+- Identificação do andar de cada classe.
+- Faixa etária ou público-alvo.
+- Descrição das classes.
+- Horários das aulas.
+- Calendário de estudos.
+- Comunicados da EBD.
+- Notificações de novas lições.
+
+### Painel administrativo da EBD
+
+Permitir que os responsáveis possam:
+
+- Cadastrar novas classes.
+- Alterar professores.
+- Atualizar a localização das salas.
+- Publicar novas lições.
+- Fazer upload de arquivos PDF.
+- Programar datas de publicação.
+- Editar informações.
+- Arquivar estudos anteriores.
+
+O sistema deverá permitir a publicação de novas lições sem necessidade de atualizar o aplicativo nas lojas.
+
+## 14. DEMAIS MINISTÉRIOS E ATIVIDADES
+
+Criar páginas institucionais para apresentação das demais áreas de atuação da igreja, incluindo inicialmente:
+
+- Seminário Vida e Luz.
+- Cursos de Família.
+- Juve (Juventude Nova Jerusalém)
+- Adore (Adolescentes Nova Jerusalém)
+- Mulheres Nova Jerusalém.
+- Homens Nova Jerusalém.
+- Ministério de Comunicação.
+- Ministério de Música.
+- Escola Bíblica Dominical.
+
+Cada página poderá conter descrição, liderança, fotografias, programação, eventos, contatos e informações sobre participação.
+
+Essas páginas institucionais serão independentes dos módulos internos de escalas.
+
+## 15. CULTOS, PREGAÇÕES E TRANSMISSÕES
+
+Integrar o aplicativo ao canal oficial da Igreja Nova Jerusalém no YouTube.
+
+Implementar:
+
+- Identificação de transmissões ao vivo.
+- Acesso aos cultos online.
+- Últimas pregações.
+- Histórico de transmissões.
+- Pesquisa de mensagens.
+- Organização por séries de pregações.
+- Exibição de miniaturas.
+- Compartilhamento de vídeos.
+- Reprodução através do player oficial do YouTube.
+- Notificação de início de transmissão, quando tecnicamente disponível.
+
+Evitar a hospedagem desnecessária de vídeos no próprio servidor.
+
+## 16. AUTENTICAÇÃO E NÍVEIS DE ACESSO
+
+O aplicativo deverá possuir uma área pública e uma área restrita.
+
+Não será necessário realizar login para consultar informações públicas da igreja, programações, músicas, eventos e conteúdos públicos da EBD.
+
+Para acessar as funcionalidades internas, será necessário realizar autenticação.
+
+### Perfis de acesso
+
+**Visitante:** acesso aos conteúdos públicos.
+
+**Membro:** perfil pessoal e conteúdos destinados aos membros.
+
+**Voluntário:** acesso às próprias escalas, disponibilidade, confirmações e comunicados dos ministérios aos quais pertence.
+
+**Líder de ministério:** gerenciamento de integrantes, funções, escalas e comunicados do seu respectivo ministério.
+
+**Coordenador da EBD:** gerenciamento de classes, professores e lições.
+
+**Administrador de conteúdo:** gerenciamento de notícias, eventos, programações e informações institucionais.
+
+**Administração pastoral:** visão geral dos ministérios, escalas, atividades e informações institucionais, conforme autorização.
+
+**Superadministrador:** gerenciamento completo da plataforma.
+
+Implementar controle de acesso baseado em funções e permissões, garantindo que cada usuário visualize e altere somente as informações para as quais possui autorização.
+
+## 17. PAINEL ADMINISTRATIVO WEB
+
+Desenvolver um painel administrativo acessível pelo navegador, permitindo que a secretaria, liderança pastoral e líderes de ministérios gerenciem o aplicativo sem conhecimentos de programação.
+
+### Módulos administrativos
+
+- Dashboard geral.
+- Gerenciamento de usuários.
+- Gerenciamento de membros.
+- Gerenciamento de ministérios.
+- Gerenciamento de funções.
+- Gerenciamento de permissões.
+- Gerenciamento de escalas.
+- Calendário de cultos e eventos.
+- Gerenciamento da EBD.
+- Gerenciamento de arquivos.
+- Gerenciamento de músicas e repertórios.
+- Gerenciamento de notícias.
+- Gerenciamento de comunicados.
+- Envio de notificações.
+- Informações institucionais.
+- Configurações gerais.
+- Relatórios.
+- Histórico de alterações.
+
+O painel deverá possuir uma interface profissional, responsiva e consistente com a identidade visual do aplicativo.
+
+## 18. ARQUITETURA TECNOLÓGICA
+
+Utilizar tecnologias modernas, priorizando manutenção, segurança, escalabilidade e baixo custo operacional.
+
+### Aplicativo mobile
+
+- React Native.
+- Expo.
+- TypeScript.
+- Expo Router.
+- TanStack Query para gerenciamento de dados remotos.
+- Zustand ou Context API para estados globais, conforme necessidade.
+- Expo Notifications.
+
+### Painel administrativo
+
+- Next.js.
+- React.
+- TypeScript.
+- Tailwind CSS.
+- Componentes reutilizáveis.
+- Layout responsivo.
+
+### Backend e banco de dados
+
+- Supabase.
+- PostgreSQL.
+- Supabase Auth.
+- Supabase Storage.
+- Supabase Edge Functions.
+- Supabase Realtime, quando necessário.
+- Row Level Security (RLS).
+
+### Integrações externas
+
+- Spotify Web API.
+- Spotify Embed.
+- Apple Music API.
+- YouTube Data API v3.
+- YouTube IFrame Player API.
+- Google Maps.
+- Expo Push Notifications.
+- Compartilhamento nativo com WhatsApp.
+
+### Infraestrutura
+
+- GitHub para versionamento.
+- Vercel para hospedagem do painel administrativo.
+- Supabase para infraestrutura de backend.
+- Expo Application Services para builds e distribuição mobile.
+- Ambientes separados de desenvolvimento e produção.
+- Variáveis de ambiente para credenciais.
+- Migrations versionadas do banco de dados.
+
+Caso o projeto já possua uma arquitetura funcional, preservar as tecnologias existentes quando compatíveis, evitando reescritas desnecessárias.
+
+## 19. ESTRUTURA DO BANCO DE DADOS
+
+Criar uma estrutura relacional, normalizada e preparada para expansão.
+
+### Tabelas principais
+
+- `church_info` — informações institucionais.
+- `church_services` — programação recorrente.
+- `profiles` — perfis dos usuários.
+- `roles` — níveis de acesso.
+- `permissions` — permissões.
+- `user_roles` — relacionamento entre usuários e níveis de acesso.
+- `ministries` — ministérios.
+- `ministry_members` — integrantes dos ministérios.
+- `ministry_positions` — funções de cada ministério.
+- `member_positions` — funções atribuídas aos integrantes.
+- `events` — cultos e eventos.
+- `schedules` — escalas por ministério.
+- `schedule_assignments` — integrantes e funções de cada escala.
+- `availability` — disponibilidade dos voluntários.
+- `swap_requests` — solicitações de substituição.
+- `attendance` — registro de presença.
+- `songs` — catálogo musical.
+- `albums` — discografia.
+- `music_platform_links` — identificadores e links das plataformas.
+- `setlists` — repertórios.
+- `setlist_songs` — músicas dos repertórios.
+- `rehearsals` — ensaios.
+- `ebd_classes` — classes da EBD.
+- `ebd_teachers` — professores.
+- `ebd_lessons` — lições digitais.
+- `ebd_materials` — arquivos complementares.
+- `announcements` — comunicados.
+- `notifications` — notificações.
+- `device_tokens` — dispositivos autorizados a receber notificações.
+- `media_content` — conteúdos audiovisuais.
+- `audit_logs` — histórico de alterações.
+
+Utilizar UUIDs como identificadores, chaves estrangeiras, índices, restrições de integridade e campos de criação e atualização.
+
+Não criar bancos de dados separados para cada ministério. Utilizar uma estrutura centralizada, garantindo a separação lógica dos registros por meio do identificador `ministry_id` e das políticas de segurança.
+
+## 20. SEGURANÇA E LGPD
+
+Implementar desde o início:
+
+- Autenticação segura.
+- Recuperação de senha.
+- Controle de sessões.
+- Validação de permissões no backend.
+- Row Level Security.
+- Proteção de rotas administrativas.
+- Validação dos dados recebidos.
+- Armazenamento seguro de arquivos.
+- URLs temporárias para conteúdos restritos.
+- Registro de alterações administrativas.
+- Backups periódicos.
+- Política de privacidade.
+- Termos de utilização.
+- Solicitação de exclusão de conta.
+- Proteção contra acessos indevidos.
+- Minimização da coleta de dados pessoais.
+
+Considerar que informações relacionadas à participação religiosa podem constituir dados pessoais sensíveis segundo a LGPD.
+
+Não disponibilizar publicamente informações pessoais de membros, voluntários ou suas escalas internas sem autorização e fundamento legal adequado.
+
+## 21. NOTIFICAÇÕES
+
+Implementar uma central de notificações integrada ao aplicativo.
+
+### Tipos de notificações
+
+- Nova escala publicada.
+- Alteração de escala.
+- Solicitação de confirmação.
+- Lembrete de compromisso.
+- Solicitação de substituição.
+- Aprovação ou recusa de troca.
+- Novo repertório.
+- Lembrete de ensaio.
+- Nova lição da EBD.
+- Novo evento.
+- Comunicado institucional.
+- Transmissão ao vivo.
+- Novo lançamento musical.
+
+Permitir que o usuário configure suas preferências de notificações.
+
+As notificações deverão direcionar o usuário diretamente ao conteúdo relacionado.
+
+## 22. NAVEGAÇÃO DO APLICATIVO
+
+Organizar a navegação principal de forma simples e intuitiva.
+
+### Menu principal sugerido
+
+- Início.
+- Agenda.
+- Ministérios.
+- EBD.
+- Mais.
+
+### Menu complementar
+
+- Min. Nova Jerusalém.
+- Cultos e pregações.
+- Transmissões ao vivo.
+- Conheça nossa igreja.
+- Notícias e comunicados.
+- Localização.
+- Redes sociais.
+- Minhas escalas.
+- Notificações.
+- Meu perfil.
+- Configurações.
+
+A navegação deverá se adaptar às permissões do usuário autenticado.
+
+## 23. ETAPAS DE DESENVOLVIMENTO
+
+**Etapa 1 — Identidade visual e estrutura institucional**
+
+Implementar o Design System, navegação, tela inicial, informações da igreja e programação semanal.
+
+**Etapa 2 — Infraestrutura e autenticação**
+
+Configurar o banco de dados, autenticação, armazenamento, permissões e políticas de segurança.
+
+**Etapa 3 — Central de ministérios**
+
+Implementar os cinco ministérios iniciais, cadastro de integrantes, funções e gerenciamento independente das equipes.
+
+**Etapa 4 — Sistema de escalas**
+
+Implementar calendário central, escalas, disponibilidade, confirmações, substituições, conflitos e notificações.
+
+**Etapa 5 — Escola Bíblica Dominical**
+
+Implementar classes, professores, localização das salas, biblioteca digital, leitura online e download de lições.
+
+**Etapa 6 — Min. Nova Jerusalém**
+
+Implementar catálogo musical, discografia, integrações com streaming, videoclipes e repertórios.
+
+**Etapa 7 — Painel administrativo**
+
+Implementar os módulos administrativos e a gestão dinâmica dos conteúdos.
+
+**Etapa 8 — Integrações e notificações**
+
+Finalizar integrações externas, notificações push e compartilhamento de conteúdos.
+
+**Etapa 9 — Testes e homologação**
+
+Realizar testes funcionais, testes de segurança, testes de acessibilidade, testes de desempenho e validação com a liderança e os voluntários.
+
+**Etapa 10 — Publicação**
+
+Preparar o aplicativo para Android e iOS, incluindo documentação, política de privacidade e requisitos das lojas.
+
+## 24. INFORMAÇÕES PENDENTES DE VALIDAÇÃO
+
+Antes da publicação oficial, solicitar à igreja:
+
+- Logotipo oficial em SVG ou PNG.
+- Manual de identidade visual, caso exista.
+- Programação semanal atualizada.
+- Calendário anual de eventos.
+- Telefone e WhatsApp oficiais.
+- E-mail institucional atualizado.
+- Nome dos líderes de cada ministério.
+- Relação autorizada de integrantes.
+- Funções reais de cada equipe.
+- Modelos de escalas utilizados atualmente.
+- Relação das classes, salas e professores da EBD.
+- Arquivos digitais das lições.
+- Identificadores oficiais das plataformas musicais.
+- Autorização de utilização da marca e dos conteúdos.
+- CNPJ e razão social da instituição.
+
+## 25. DIRETRIZES GERAIS DE IMPLEMENTAÇÃO
+
+Antes de iniciar as alterações, analisar a arquitetura atual do projeto, identificando os componentes, funcionalidades e estruturas já existentes.
+
+Preservar tudo o que estiver funcionando corretamente.
+
+Não realizar apenas uma implementação visual. Todas as funcionalidades deverão possuir lógica real, persistência de dados, validações e integração com o backend.
+
+Não utilizar informações fictícias como se fossem dados oficiais. Quando necessário, utilizar dados de demonstração claramente identificados e separados do ambiente de produção.
+
+Implementar estados de carregamento, tratamento de erros, estados vazios, feedback de ações e validação de formulários.
+
+Garantir que os ministérios sejam independentes em suas operações, mas integrados ao calendário institucional e ao perfil de cada voluntário.
+
+Documentar as decisões técnicas, dependências, configurações, variáveis de ambiente e procedimentos de instalação.
+
+O objetivo final é transformar o aplicativo Nova Jerusalém em uma plataforma digital completa, centralizando a comunicação institucional, a formação bíblica, o conteúdo musical e a organização dos ministérios, proporcionando uma experiência moderna para membros, visitantes, voluntários e liderança pastoral.

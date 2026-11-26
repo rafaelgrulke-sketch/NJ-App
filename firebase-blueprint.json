@@ -1,0 +1,618 @@
+{
+  "entities": {
+    "ChurchSetting": {
+      "title": "ChurchSetting",
+      "description": "Public institutional settings document (churchInfo, weeklyInformativo, institutionalAreas, devotionals).",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["churchInfo", "weeklyInformativo", "institutionalAreas", "devotionals"],
+          "maxLength": 40
+        },
+        "payload": {
+          "type": "object",
+          "description": "Structured settings payload for the selected kind."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["kind", "payload", "updatedBy", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile with PII isolation and server-enforced RBAC role.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "photoUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "membro",
+            "voluntario",
+            "lider_ministerio",
+            "coord_ebd",
+            "admin_conteudo",
+            "pastoral",
+            "superadmin"
+          ]
+        },
+        "ministryIds": {
+          "type": "array",
+          "description": "Bounded list of up to 10 ministry IDs."
+        },
+        "favoriteTrackIds": {
+          "type": "array",
+          "description": "Bounded list of up to 100 favorite track IDs."
+        },
+        "eventReminders": {
+          "type": "array",
+          "description": "Bounded list of up to 100 event IDs with reminders enabled."
+        },
+        "completedBibleDays": {
+          "type": "array",
+          "description": "Bounded list of up to 60 completed Bible reading day IDs."
+        },
+        "readNotificationIds": {
+          "type": "array",
+          "description": "Bounded list of up to 200 read notification IDs."
+        },
+        "notificationPrefs": {
+          "type": "object",
+          "description": "Boolean flags for notification categories."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "role", "createdAt", "updatedAt"]
+    },
+    "SermonNote": {
+      "title": "SermonNote",
+      "description": "Private sermon notes scoped strictly to the owning user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "preacher": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "scripture": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "title", "date", "preacher", "scripture", "content", "createdAt", "updatedAt"]
+    },
+    "ChurchEvent": {
+      "title": "ChurchEvent",
+      "description": "Published church event with custom artwork and registration configuration.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "category": {
+          "type": "string",
+          "enum": ["culto", "congresso", "conferencia", "encontro", "especial"]
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "time": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "location": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "description": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2000
+        },
+        "guidelines": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "featured": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["agendado", "reagendado", "cancelado"]
+        },
+        "requiresRegistration": {
+          "type": "boolean"
+        },
+        "registrationDeadline": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "capacity": {
+          "type": "number"
+        },
+        "registeredCount": {
+          "type": "number"
+        },
+        "artworkUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "badgeLabel": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "title",
+        "category",
+        "date",
+        "time",
+        "location",
+        "description",
+        "guidelines",
+        "status",
+        "requiresRegistration",
+        "registeredCount",
+        "updatedAt"
+      ]
+    },
+    "EventRegistration": {
+      "title": "EventRegistration",
+      "description": "PII-protected registration for a church event (open create for visitors/members, staff/owner read only).",
+      "type": "object",
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 40
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["eventId", "userId", "name", "phone", "email", "createdAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Official church announcement.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "body": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2000
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 20,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "department": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["normal", "importante"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["title", "body", "date", "department", "priority", "createdAt"]
+    },
+    "EbdLesson": {
+      "title": "EbdLesson",
+      "description": "Digital Sunday School (EBD) lesson.",
+      "type": "object",
+      "properties": {
+        "number": { "type": "number" },
+        "title": { "type": "string", "minLength": 2, "maxLength": 180 },
+        "theme": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "quarter": { "type": "string", "maxLength": 60 },
+        "year": { "type": "number" },
+        "date": { "type": "string", "maxLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "bibleText": { "type": "string", "maxLength": 160 },
+        "goldenVerse": { "type": "string", "maxLength": 500 },
+        "author": { "type": "string", "maxLength": 120 },
+        "summary": { "type": "string", "maxLength": 1200 },
+        "sections": { "type": "array" },
+        "reflectionQuestions": { "type": "array" },
+        "practicalApplication": { "type": "string", "maxLength": 1200 },
+        "pdfFileName": { "type": "string", "maxLength": 180 },
+        "status": { "type": "string", "enum": ["publicada", "agendada", "arquivada"] },
+        "isCurrentWeek": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "number",
+        "title",
+        "theme",
+        "quarter",
+        "year",
+        "date",
+        "bibleText",
+        "goldenVerse",
+        "author",
+        "summary",
+        "sections",
+        "reflectionQuestions",
+        "practicalApplication",
+        "pdfFileName",
+        "status",
+        "updatedAt"
+      ]
+    },
+    "EbdClass": {
+      "title": "EbdClass",
+      "description": "EBD classroom and teacher schedule.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "teacher": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "room": { "type": "string", "maxLength": 80 },
+        "floor": { "type": "string", "maxLength": 80 },
+        "schedule": { "type": "string", "maxLength": 80 },
+        "ageGroup": { "type": "string", "maxLength": 80 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "teacher", "room", "floor", "schedule", "ageGroup", "notes", "visibility", "updatedAt"]
+    },
+    "DiscographyProject": {
+      "title": "DiscographyProject",
+      "description": "Official Min. Nova Jerusalém discography album/EP/single (strictly superadmin/pastoral write only).",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "year": { "type": "number" },
+        "type": { "type": "string", "enum": ["album", "single", "ep"] },
+        "isRecent": { "type": "boolean" },
+        "coverImageUrl": { "type": "string", "maxLength": 500 },
+        "artworkStyle": { "type": "number" },
+        "spotifyUrl": { "type": "string", "maxLength": 500 },
+        "spotifyEmbedUrl": { "type": "string", "maxLength": 500 },
+        "appleMusicUrl": { "type": "string", "maxLength": 500 },
+        "amazonMusicUrl": { "type": "string", "maxLength": 500 },
+        "youtubeUrl": { "type": "string", "maxLength": 500 },
+        "tracks": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "title",
+        "year",
+        "type",
+        "spotifyUrl",
+        "appleMusicUrl",
+        "amazonMusicUrl",
+        "youtubeUrl",
+        "tracks",
+        "updatedAt"
+      ]
+    },
+    "MinistryUnit": {
+      "title": "MinistryUnit",
+      "description": "Church ministry unit with positions, departments, checklist, members, and incidents.",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "maxLength": 80, "pattern": "^[a-z0-9\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "leader": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "description": { "type": "string", "maxLength": 1200 },
+        "arrivalTimeNote": { "type": "string", "maxLength": 240 },
+        "positions": { "type": "array" },
+        "departments": { "type": "array" },
+        "checklist": { "type": "array" },
+        "members": { "type": "array" },
+        "incidents": { "type": "array" },
+        "rehearsals": { "type": "array" },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "name", "leader", "description", "arrivalTimeNote", "positions", "checklist", "members", "incidents", "visibility", "updatedAt"]
+    },
+    "ScheduleSlot": {
+      "title": "ScheduleSlot",
+      "description": "Ministry volunteer service schedule slot.",
+      "type": "object",
+      "properties": {
+        "ministryId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ministryName": { "type": "string", "maxLength": 120 },
+        "departmentId": { "type": "string", "maxLength": 128 },
+        "departmentName": { "type": "string", "maxLength": 120 },
+        "eventId": { "type": "string", "maxLength": 128 },
+        "eventTitle": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "date": { "type": "string", "maxLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "time": { "type": "string", "maxLength": 40 },
+        "scheduleStatus": { "type": "string", "enum": ["rascunho", "publicada", "em_andamento", "concluida", "cancelada"] },
+        "positionName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "volunteerName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "volunteerUid": { "type": "string", "maxLength": 128 },
+        "volunteerStatus": {
+          "type": "string",
+          "enum": ["aguardando", "confirmado", "recusado", "substituicao_solicitada", "substituido", "presente", "ausente"]
+        },
+        "swapReason": { "type": "string", "maxLength": 400 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "ministryId",
+        "ministryName",
+        "eventTitle",
+        "date",
+        "time",
+        "scheduleStatus",
+        "positionName",
+        "volunteerName",
+        "volunteerStatus",
+        "updatedAt"
+      ]
+    },
+    "CultRepertoire": {
+      "title": "CultRepertoire",
+      "description": "Service worship repertoire containing both Min. NJ and external worship songs.",
+      "type": "object",
+      "properties": {
+        "eventTitle": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "date": { "type": "string", "maxLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "time": { "type": "string", "maxLength": 40 },
+        "ministerName": { "type": "string", "maxLength": 120 },
+        "musicalNotes": { "type": "string", "maxLength": 1000 },
+        "songs": { "type": "array" },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["eventTitle", "date", "time", "ministerName", "musicalNotes", "songs", "visibility", "updatedAt"]
+    },
+    "UnavailabilityRecord": {
+      "title": "UnavailabilityRecord",
+      "description": "Volunteer unavailability declaration for schedule conflict detection.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "volunteerName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "ministryId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ministryName": { "type": "string", "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "reason": { "type": "string", "minLength": 2, "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "volunteerName", "ministryId", "ministryName", "date", "reason", "createdAt"]
+    },
+    "PrayerRequest": {
+      "title": "PrayerRequest",
+      "description": "Prayer request with LGPD privacy tiers (visitor create allowed; private requests isolated to pastoral/superadmin).",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "isVisitor": { "type": "boolean" },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "message": { "type": "string", "minLength": 3, "maxLength": 1500 },
+        "privacy": { "type": "string", "enum": ["comunidade", "equipe_identificado", "equipe_anonimo"] },
+        "prayingCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["recebido", "em_oracao", "atendido"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "authorName", "isVisitor", "category", "message", "privacy", "prayingCount", "status", "createdAt"]
+    },
+    "BroadcastVideo": {
+      "title": "BroadcastVideo",
+      "description": "YouTube Live or recorded sermon broadcast entry.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "preacher": { "type": "string", "maxLength": 120 },
+        "series": { "type": "string", "maxLength": 120 },
+        "date": { "type": "string", "maxLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "duration": { "type": "string", "maxLength": 40 },
+        "youtubeId": { "type": "string", "maxLength": 20, "pattern": "^[a-zA-Z0-9_\\-]{11}$" },
+        "isLive": { "type": "boolean" },
+        "description": { "type": "string", "maxLength": 1000 },
+        "visibility": { "type": "string", "enum": ["public"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "preacher", "series", "date", "duration", "youtubeId", "description", "visibility", "updatedAt"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Broadcast notification item for the NJ App notification center.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["escala", "ebd", "evento", "musica", "comunicado", "transmissao"] },
+        "title": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "body": { "type": "string", "minLength": 2, "maxLength": 600 },
+        "date": { "type": "string", "maxLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "targetTab": { "type": "string", "maxLength": 40 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "title", "body", "date", "targetTab", "createdAt"]
+    },
+    "AuditLogEntry": {
+      "title": "AuditLogEntry",
+      "description": "Immutable administrative audit log entry.",
+      "type": "object",
+      "properties": {
+        "actorUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actor": { "type": "string", "maxLength": 120 },
+        "action": { "type": "string", "minLength": 2, "maxLength": 400 },
+        "module": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorUid", "actor", "action", "module", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/ChurchSetting" },
+      "description": "Public church settings documents (churchInfo, weeklyInformativo, institutionalAreas, devotionals)."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profiles and server-enforced RBAC roles."
+    },
+    "/users/{userId}/sermonNotes/{noteId}": {
+      "schema": { "$ref": "#/entities/SermonNote" },
+      "description": "Private personal sermon notes owned strictly by {userId}."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/ChurchEvent" },
+      "description": "Published church events with promotional artwork."
+    },
+    "/eventRegistrations/{registrationId}": {
+      "schema": { "$ref": "#/entities/EventRegistration" },
+      "description": "PII-protected event registrations (open create, staff/owner read)."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Church announcements."
+    },
+    "/ebdLessons/{lessonId}": {
+      "schema": { "$ref": "#/entities/EbdLesson" },
+      "description": "EBD Digital lessons."
+    },
+    "/ebdClasses/{classId}": {
+      "schema": { "$ref": "#/entities/EbdClass" },
+      "description": "EBD Digital classes."
+    },
+    "/discography/{projectId}": {
+      "schema": { "$ref": "#/entities/DiscographyProject" },
+      "description": "Official Min. Nova Jerusalém catalog (superadmin/pastoral write only)."
+    },
+    "/ministries/{ministryId}": {
+      "schema": { "$ref": "#/entities/MinistryUnit" },
+      "description": "Church ministry units and departments."
+    },
+    "/schedules/{scheduleId}": {
+      "schema": { "$ref": "#/entities/ScheduleSlot" },
+      "description": "Ministry volunteer service schedules."
+    },
+    "/repertoires/{repertoireId}": {
+      "schema": { "$ref": "#/entities/CultRepertoire" },
+      "description": "Worship service repertoires."
+    },
+    "/unavailability/{recordId}": {
+      "schema": { "$ref": "#/entities/UnavailabilityRecord" },
+      "description": "Volunteer unavailability dates."
+    },
+    "/prayers/{prayerId}": {
+      "schema": { "$ref": "#/entities/PrayerRequest" },
+      "description": "Prayer requests with LGPD privacy tiers."
+    },
+    "/videos/{videoId}": {
+      "schema": { "$ref": "#/entities/BroadcastVideo" },
+      "description": "YouTube Live & sermon videos."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "NJ App notifications."
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLogEntry" },
+      "description": "Immutable administrative audit logs."
+    }
+  }
+}

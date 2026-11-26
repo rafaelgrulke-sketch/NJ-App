@@ -1,0 +1,757 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================
+    // GLOBAL PRIMITIVES & ROLE HELPERS (Zero-Trust RBAC)
+    // =========================================================
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isBootstrapSuperAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'rafaelgrulke123@gmail.com';
+    }
+
+    function hasUserDoc() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function currentUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isSuperAdminOrPastoral() {
+      return isBootstrapSuperAdmin() || (
+        isVerifiedUser() && hasUserDoc() && currentUserRole() in ['superadmin', 'pastoral']
+      );
+    }
+
+    function isAdminContentOrHigher() {
+      return isBootstrapSuperAdmin() || (
+        isVerifiedUser() && hasUserDoc() && currentUserRole() in ['superadmin', 'pastoral', 'admin_conteudo']
+      );
+    }
+
+    function isEbdManager() {
+      return isBootstrapSuperAdmin() || (
+        isVerifiedUser() && hasUserDoc() && currentUserRole() in ['superadmin', 'pastoral', 'admin_conteudo', 'coord_ebd']
+      );
+    }
+
+    function isAdminOrLeader() {
+      return isBootstrapSuperAdmin() || (
+        isVerifiedUser() && hasUserDoc() && currentUserRole() in ['superadmin', 'pastoral', 'admin_conteudo', 'lider_ministerio']
+      );
+    }
+
+    function isStaff() {
+      return isBootstrapSuperAdmin() || (
+        isVerifiedUser() && hasUserDoc() && currentUserRole() in ['superadmin', 'pastoral', 'admin_conteudo', 'coord_ebd', 'lider_ministerio']
+      );
+    }
+
+    function isValidDateStr(v) {
+      return v is string && v.size() == 10 && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function isSafeUrlOrEmpty(v) {
+      return v is string && v.size() <= 500 && (
+        v == '' ||
+        v.matches('^https://.*') ||
+        v.matches('^/uploads/[a-zA-Z0-9_\\-\\.]+$') ||
+        v.matches('^/assets/[a-zA-Z0-9_\\-\\./]+$') ||
+        v.matches('^/src/assets/[a-zA-Z0-9_\\-\\./]+$')
+      );
+    }
+
+    function isBoundedStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 240));
+    }
+
+    function isBoundedMapList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || arr[0] is map);
+    }
+
+    // =========================================================
+    // VALIDATION BLUEPRINTS (Anti-Update-Gap Helpers)
+    // =========================================================
+    function isValidSetting(data) {
+      return data.keys().hasAll(['kind', 'payload', 'updatedBy', 'updatedAt']) &&
+        data.keys().hasOnly(['kind', 'payload', 'updatedBy', 'updatedAt']) &&
+        data.kind in ['churchInfo', 'weeklyInformativo', 'institutionalAreas', 'devotionals'] &&
+        data.payload is map &&
+        data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 128 &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'uid',
+          'displayName',
+          'email',
+          'photoUrl',
+          'role',
+          'ministryIds',
+          'favoriteTrackIds',
+          'eventReminders',
+          'completedBibleDays',
+          'readNotificationIds',
+          'notificationPrefs',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.uid == userId &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+        (!('photoUrl' in data) || isSafeUrlOrEmpty(data.photoUrl)) &&
+        data.role in ['membro', 'voluntario', 'lider_ministerio', 'coord_ebd', 'admin_conteudo', 'pastoral', 'superadmin'] &&
+        (!('ministryIds' in data) || isBoundedStringList(data.ministryIds, 10)) &&
+        (!('favoriteTrackIds' in data) || isBoundedStringList(data.favoriteTrackIds, 100)) &&
+        (!('eventReminders' in data) || isBoundedStringList(data.eventReminders, 100)) &&
+        (!('completedBibleDays' in data) || isBoundedStringList(data.completedBibleDays, 60)) &&
+        (!('readNotificationIds' in data) || isBoundedStringList(data.readNotificationIds, 200)) &&
+        (!('notificationPrefs' in data) || data.notificationPrefs is map) &&
+        data.createdAt is timestamp &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidSermonNote(data, userId) {
+      return data.keys().hasAll(['ownerId', 'title', 'date', 'preacher', 'scripture', 'content', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'title', 'date', 'preacher', 'scripture', 'content', 'createdAt', 'updatedAt']) &&
+        data.ownerId == userId &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+        isValidDateStr(data.date) &&
+        data.preacher is string && data.preacher.size() <= 120 &&
+        data.scripture is string && data.scripture.size() <= 160 &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 10000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidEvent(data) {
+      return data.keys().hasAll([
+          'title', 'category', 'date', 'time', 'location', 'description',
+          'guidelines', 'status', 'requiresRegistration', 'registeredCount', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'category', 'date', 'time', 'location', 'description',
+          'guidelines', 'featured', 'status', 'requiresRegistration',
+          'registrationDeadline', 'capacity', 'registeredCount',
+          'artworkUrl', 'badgeLabel', 'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 140 &&
+        data.category in ['culto', 'congresso', 'conferencia', 'encontro', 'especial'] &&
+        isValidDateStr(data.date) &&
+        data.time is string && data.time.size() >= 2 && data.time.size() <= 40 &&
+        data.location is string && data.location.size() >= 2 && data.location.size() <= 160 &&
+        data.description is string && data.description.size() >= 2 && data.description.size() <= 2000 &&
+        data.guidelines is string && data.guidelines.size() <= 1000 &&
+        (!('featured' in data) || data.featured is bool) &&
+        data.status in ['agendado', 'reagendado', 'cancelado'] &&
+        data.requiresRegistration is bool &&
+        (!('registrationDeadline' in data) || (data.registrationDeadline is string && data.registrationDeadline.size() <= 20)) &&
+        (!('capacity' in data) || (data.capacity is number && data.capacity >= 0 && data.capacity <= 50000)) &&
+        data.registeredCount is number && data.registeredCount >= 0 && data.registeredCount <= 50000 &&
+        (!('artworkUrl' in data) || isSafeUrlOrEmpty(data.artworkUrl)) &&
+        (!('badgeLabel' in data) || (data.badgeLabel is string && data.badgeLabel.size() <= 40)) &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidRegistration(data) {
+      return data.keys().hasAll(['eventId', 'userId', 'name', 'phone', 'email', 'createdAt']) &&
+        data.keys().hasOnly(['eventId', 'userId', 'name', 'phone', 'email', 'notes', 'createdAt']) &&
+        isValidId(data.eventId) &&
+        isValidId(data.userId) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.phone is string && data.phone.size() >= 8 && data.phone.size() <= 40 &&
+        data.email is string && data.email.size() >= 5 && data.email.size() <= 160 &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+        data.createdAt == request.time;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['title', 'body', 'date', 'department', 'priority', 'createdAt']) &&
+        data.keys().hasOnly(['title', 'body', 'date', 'department', 'priority', 'createdAt']) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.body is string && data.body.size() >= 2 && data.body.size() <= 2000 &&
+        isValidDateStr(data.date) &&
+        data.department is string && data.department.size() >= 2 && data.department.size() <= 100 &&
+        data.priority in ['normal', 'importante'] &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidEbdLesson(data) {
+      return data.keys().hasAll([
+          'number', 'title', 'theme', 'quarter', 'year', 'date', 'bibleText',
+          'goldenVerse', 'author', 'summary', 'sections', 'reflectionQuestions',
+          'practicalApplication', 'pdfFileName', 'status', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'number', 'title', 'theme', 'quarter', 'year', 'date', 'bibleText',
+          'goldenVerse', 'author', 'summary', 'sections', 'reflectionQuestions',
+          'practicalApplication', 'pdfFileName', 'status', 'isCurrentWeek', 'updatedAt'
+        ]) &&
+        data.number is number && data.number >= 1 && data.number <= 999 &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 180 &&
+        data.theme is string && data.theme.size() >= 2 && data.theme.size() <= 160 &&
+        data.quarter is string && data.quarter.size() <= 60 &&
+        data.year is number && data.year >= 2000 && data.year <= 2100 &&
+        isValidDateStr(data.date) &&
+        data.bibleText is string && data.bibleText.size() <= 160 &&
+        data.goldenVerse is string && data.goldenVerse.size() <= 500 &&
+        data.author is string && data.author.size() <= 120 &&
+        data.summary is string && data.summary.size() <= 1200 &&
+        isBoundedMapList(data.sections, 20) &&
+        isBoundedStringList(data.reflectionQuestions, 20) &&
+        data.practicalApplication is string && data.practicalApplication.size() <= 1200 &&
+        data.pdfFileName is string && data.pdfFileName.size() <= 180 &&
+        data.status in ['publicada', 'agendada', 'arquivada'] &&
+        (!('isCurrentWeek' in data) || data.isCurrentWeek is bool) &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidEbdClass(data) {
+      return data.keys().hasAll(['name', 'teacher', 'room', 'floor', 'schedule', 'ageGroup', 'notes', 'visibility', 'updatedAt']) &&
+        data.keys().hasOnly(['name', 'teacher', 'room', 'floor', 'schedule', 'ageGroup', 'notes', 'visibility', 'updatedAt']) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.teacher is string && data.teacher.size() >= 2 && data.teacher.size() <= 120 &&
+        data.room is string && data.room.size() <= 80 &&
+        data.floor is string && data.floor.size() <= 80 &&
+        data.schedule is string && data.schedule.size() <= 80 &&
+        data.ageGroup is string && data.ageGroup.size() <= 80 &&
+        data.notes is string && data.notes.size() <= 500 &&
+        data.visibility == 'public' &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidDiscography(data) {
+      return data.keys().hasAll([
+          'title', 'year', 'type', 'spotifyUrl', 'appleMusicUrl',
+          'amazonMusicUrl', 'youtubeUrl', 'tracks', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'year', 'type', 'isRecent', 'coverImageUrl', 'artworkStyle',
+          'spotifyUrl', 'spotifyEmbedUrl', 'appleMusicUrl', 'amazonMusicUrl',
+          'youtubeUrl', 'tracks', 'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.year is number && data.year >= 1980 && data.year <= 2100 &&
+        data.type in ['album', 'single', 'ep'] &&
+        (!('isRecent' in data) || data.isRecent is bool) &&
+        (!('coverImageUrl' in data) || isSafeUrlOrEmpty(data.coverImageUrl)) &&
+        (!('artworkStyle' in data) || (data.artworkStyle is number && data.artworkStyle >= 0 && data.artworkStyle <= 20)) &&
+        isSafeUrlOrEmpty(data.spotifyUrl) &&
+        (!('spotifyEmbedUrl' in data) || isSafeUrlOrEmpty(data.spotifyEmbedUrl)) &&
+        isSafeUrlOrEmpty(data.appleMusicUrl) &&
+        isSafeUrlOrEmpty(data.amazonMusicUrl) &&
+        isSafeUrlOrEmpty(data.youtubeUrl) &&
+        isBoundedMapList(data.tracks, 40) &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidMinistry(data) {
+      return data.keys().hasAll([
+          'slug', 'name', 'leader', 'description', 'arrivalTimeNote',
+          'positions', 'checklist', 'members', 'incidents', 'visibility', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'slug', 'name', 'leader', 'description', 'arrivalTimeNote',
+          'positions', 'departments', 'checklist', 'members', 'incidents', 'rehearsals', 'visibility', 'updatedAt'
+        ]) &&
+        data.slug is string && data.slug.size() >= 1 && data.slug.size() <= 80 &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.leader is string && data.leader.size() >= 2 && data.leader.size() <= 120 &&
+        data.description is string && data.description.size() <= 1200 &&
+        data.arrivalTimeNote is string && data.arrivalTimeNote.size() <= 240 &&
+        isBoundedMapList(data.positions, 40) &&
+        (!('departments' in data) || isBoundedMapList(data.departments, 20)) &&
+        isBoundedStringList(data.checklist, 40) &&
+        isBoundedStringList(data.members, 100) &&
+        isBoundedMapList(data.incidents, 100) &&
+        (!('rehearsals' in data) || isBoundedMapList(data.rehearsals, 40)) &&
+        data.visibility == 'public' &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidSchedule(data) {
+      return data.keys().hasAll([
+          'ministryId', 'ministryName', 'eventTitle', 'date', 'time',
+          'scheduleStatus', 'positionName', 'volunteerName', 'volunteerStatus', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ministryId', 'ministryName', 'departmentId', 'departmentName',
+          'eventId', 'eventTitle', 'date', 'time', 'scheduleStatus',
+          'positionName', 'volunteerName', 'volunteerUid', 'volunteerStatus',
+          'swapReason', 'notes', 'updatedAt'
+        ]) &&
+        isValidId(data.ministryId) &&
+        data.ministryName is string && data.ministryName.size() <= 120 &&
+        (!('departmentId' in data) || (data.departmentId is string && data.departmentId.size() <= 128)) &&
+        (!('departmentName' in data) || (data.departmentName is string && data.departmentName.size() <= 120)) &&
+        (!('eventId' in data) || (data.eventId is string && data.eventId.size() <= 128)) &&
+        data.eventTitle is string && data.eventTitle.size() >= 2 && data.eventTitle.size() <= 160 &&
+        isValidDateStr(data.date) &&
+        data.time is string && data.time.size() <= 40 &&
+        data.scheduleStatus in ['rascunho', 'publicada', 'em_andamento', 'concluida', 'cancelada'] &&
+        data.positionName is string && data.positionName.size() >= 2 && data.positionName.size() <= 120 &&
+        data.volunteerName is string && data.volunteerName.size() >= 2 && data.volunteerName.size() <= 120 &&
+        (!('volunteerUid' in data) || (data.volunteerUid is string && data.volunteerUid.size() <= 128)) &&
+        data.volunteerStatus in ['aguardando', 'confirmado', 'recusado', 'substituicao_solicitada', 'substituido', 'presente', 'ausente'] &&
+        (!('swapReason' in data) || (data.swapReason is string && data.swapReason.size() <= 400)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidRepertoire(data) {
+      return data.keys().hasAll(['eventTitle', 'date', 'time', 'ministerName', 'musicalNotes', 'songs', 'visibility', 'updatedAt']) &&
+        data.keys().hasOnly(['eventTitle', 'date', 'time', 'ministerName', 'musicalNotes', 'songs', 'visibility', 'updatedAt']) &&
+        data.eventTitle is string && data.eventTitle.size() >= 2 && data.eventTitle.size() <= 160 &&
+        isValidDateStr(data.date) &&
+        data.time is string && data.time.size() <= 40 &&
+        data.ministerName is string && data.ministerName.size() <= 120 &&
+        data.musicalNotes is string && data.musicalNotes.size() <= 1000 &&
+        isBoundedMapList(data.songs, 30) &&
+        data.visibility == 'public' &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidUnavailability(data) {
+      return data.keys().hasAll(['userId', 'volunteerName', 'ministryId', 'ministryName', 'date', 'reason', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'volunteerName', 'ministryId', 'ministryName', 'date', 'reason', 'createdAt']) &&
+        isValidId(data.userId) &&
+        data.volunteerName is string && data.volunteerName.size() >= 2 && data.volunteerName.size() <= 120 &&
+        isValidId(data.ministryId) &&
+        data.ministryName is string && data.ministryName.size() <= 120 &&
+        isValidDateStr(data.date) &&
+        data.reason is string && data.reason.size() >= 2 && data.reason.size() <= 400 &&
+        data.createdAt == request.time;
+    }
+
+    function isValidPrayer(data) {
+      return data.keys().hasAll([
+          'authorId', 'authorName', 'isVisitor', 'category', 'message',
+          'privacy', 'prayingCount', 'status', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'authorId', 'authorName', 'isVisitor', 'category', 'message',
+          'privacy', 'prayingCount', 'status', 'createdAt'
+        ]) &&
+        isValidId(data.authorId) &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 120 &&
+        data.isVisitor is bool &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 80 &&
+        data.message is string && data.message.size() >= 3 && data.message.size() <= 1500 &&
+        data.privacy in ['comunidade', 'equipe_identificado', 'equipe_anonimo'] &&
+        data.prayingCount is number && data.prayingCount >= 1 && data.prayingCount <= 100000 &&
+        data.status in ['recebido', 'em_oracao', 'atendido'] &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidVideo(data) {
+      return data.keys().hasAll(['title', 'preacher', 'series', 'date', 'duration', 'youtubeId', 'description', 'visibility', 'updatedAt']) &&
+        data.keys().hasOnly(['title', 'preacher', 'series', 'date', 'duration', 'youtubeId', 'isLive', 'description', 'visibility', 'updatedAt']) &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.preacher is string && data.preacher.size() <= 120 &&
+        data.series is string && data.series.size() <= 120 &&
+        isValidDateStr(data.date) &&
+        data.duration is string && data.duration.size() <= 40 &&
+        data.youtubeId is string && data.youtubeId.size() == 11 && data.youtubeId.matches('^[a-zA-Z0-9_\\-]{11}$') &&
+        (!('isLive' in data) || data.isLive is bool) &&
+        data.description is string && data.description.size() <= 1000 &&
+        data.visibility == 'public' &&
+        data.updatedAt == request.time;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['type', 'title', 'body', 'date', 'targetTab', 'createdAt']) &&
+        data.keys().hasOnly(['type', 'title', 'body', 'date', 'targetTab', 'createdAt']) &&
+        data.type in ['escala', 'ebd', 'evento', 'musica', 'comunicado', 'transmissao'] &&
+        data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+        data.body is string && data.body.size() >= 2 && data.body.size() <= 600 &&
+        isValidDateStr(data.date) &&
+        data.targetTab is string && data.targetTab.size() >= 1 && data.targetTab.size() <= 40 &&
+        data.createdAt == request.time;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['actorUid', 'actor', 'action', 'module', 'createdAt']) &&
+        data.keys().hasOnly(['actorUid', 'actor', 'action', 'module', 'createdAt']) &&
+        data.actorUid == request.auth.uid &&
+        data.actor is string && data.actor.size() >= 1 && data.actor.size() <= 120 &&
+        data.action is string && data.action.size() >= 2 && data.action.size() <= 400 &&
+        data.module is string && data.module.size() >= 2 && data.module.size() <= 80 &&
+        data.createdAt == request.time;
+    }
+
+    // =========================================================
+    // COLLECTION RULES (Auth -> Static Validation -> Relational)
+    // =========================================================
+
+    // 1. Public Church Settings (churchInfo, weeklyInformativo, institutionalAreas, devotionals)
+    match /settings/{settingId} {
+      allow get: if isValidId(settingId) && settingId in ['churchInfo', 'weeklyInformativo', 'institutionalAreas', 'devotionals'];
+      allow list: if resource.data.kind in ['churchInfo', 'weeklyInformativo', 'institutionalAreas', 'devotionals'];
+      allow create, update: if isVerifiedUser() &&
+        isValidId(settingId) &&
+        settingId in ['churchInfo', 'weeklyInformativo', 'institutionalAreas', 'devotionals'] &&
+        isValidSetting(incoming()) &&
+        incoming().kind == settingId &&
+        incoming().updatedBy == request.auth.uid &&
+        isAdminContentOrHigher();
+      allow delete: if false;
+    }
+
+    // 2. Users & RBAC (Pillar 6 PII Isolation + Anti-Escalation)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isSuperAdminOrPastoral());
+      allow list: if isSuperAdminOrPastoral();
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().email == request.auth.token.email &&
+        (
+          incoming().role == 'membro' ||
+          (isBootstrapSuperAdmin() && incoming().role == 'superadmin')
+        );
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt && (
+          // Tier 1: Superadmin / Pastoral role & ministry assignment (primary superadmin protected)
+          (
+            (existing().email != 'rafaelgrulke123@gmail.com' || isBootstrapSuperAdmin()) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['role', 'ministryIds', 'updatedAt']) &&
+            isSuperAdminOrPastoral()
+          ) ||
+          // Tier 2: Owner updates personal non-privileged preferences only
+          (
+            isOwner(userId) &&
+            incoming().role == existing().role &&
+            incoming().email == existing().email &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'displayName', 'photoUrl', 'favoriteTrackIds', 'eventReminders',
+              'completedBibleDays', 'readNotificationIds', 'notificationPrefs', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if false;
+
+      // 2b. Private Personal Sermon Notes (Pillar 1 Master Gate)
+      match /sermonNotes/{noteId} {
+        allow get: if isVerifiedUser() && isValidId(userId) && isValidId(noteId) &&
+          isOwner(userId) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow list: if isVerifiedUser() && isValidId(userId) &&
+          isOwner(userId) &&
+          resource.data.ownerId == request.auth.uid;
+        allow create: if isVerifiedUser() && isValidId(userId) && isValidId(noteId) &&
+          isOwner(userId) &&
+          isValidSermonNote(incoming(), userId) &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isVerifiedUser() && isValidId(userId) && isValidId(noteId) &&
+          isOwner(userId) &&
+          isValidSermonNote(incoming(), userId) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'date', 'preacher', 'scripture', 'content', 'updatedAt']) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow delete: if isVerifiedUser() && isValidId(userId) && isValidId(noteId) &&
+          isOwner(userId) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+      }
+    }
+
+    // 3. Church Events
+    match /events/{eventId} {
+      allow get: if isValidId(eventId);
+      allow list: if resource.data.status in ['agendado', 'reagendado', 'cancelado'];
+      allow create: if isVerifiedUser() && isValidId(eventId) && isValidEvent(incoming()) && isAdminOrLeader();
+      allow update: if isVerifiedUser() && isValidId(eventId) && isValidEvent(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'category', 'date', 'time', 'location', 'description',
+          'guidelines', 'featured', 'status', 'requiresRegistration',
+          'registrationDeadline', 'capacity', 'registeredCount',
+          'artworkUrl', 'badgeLabel', 'updatedAt'
+        ]) &&
+        isAdminOrLeader();
+      allow delete: if isVerifiedUser() && isValidId(eventId) && isSuperAdminOrPastoral();
+    }
+
+    // 4. Event Registrations (PII Isolated, Open Visitor Create, Parent Event Exists Check)
+    match /eventRegistrations/{registrationId} {
+      allow get: if isSignedIn() && isValidId(registrationId) && (
+        existing().userId == request.auth.uid || isAdminOrLeader()
+      );
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdminOrLeader()
+      );
+      allow create: if isValidId(registrationId) &&
+        isValidRegistration(incoming()) &&
+        (
+          (!isSignedIn() && incoming().userId == 'visitor') ||
+          (isSignedIn() && incoming().userId == request.auth.uid)
+        ) &&
+        exists(/databases/$(database)/documents/events/$(incoming().eventId));
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(registrationId) && isSuperAdminOrPastoral();
+    }
+
+    // 5. Announcements
+    match /announcements/{announcementId} {
+      allow get: if isValidId(announcementId);
+      allow list: if resource.data.priority in ['normal', 'importante'];
+      allow create: if isVerifiedUser() &&
+        isValidId(announcementId) &&
+        isValidAnnouncement(incoming()) &&
+        incoming().createdAt == request.time &&
+        isAdminContentOrHigher();
+      allow update: if isVerifiedUser() &&
+        isValidId(announcementId) &&
+        isValidAnnouncement(incoming()) &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'body', 'date', 'department', 'priority']) &&
+        isAdminContentOrHigher();
+      allow delete: if isVerifiedUser() && isValidId(announcementId) && isAdminContentOrHigher();
+    }
+
+    // 6. EBD Lessons
+    match /ebdLessons/{lessonId} {
+      allow get: if isValidId(lessonId) && (
+        existing().status in ['publicada', 'arquivada'] || isEbdManager()
+      );
+      allow list: if resource.data.status in ['publicada', 'arquivada'] || isEbdManager();
+      allow create: if isVerifiedUser() && isValidId(lessonId) && isValidEbdLesson(incoming()) && isEbdManager();
+      allow update: if isVerifiedUser() &&
+        isValidId(lessonId) &&
+        isValidEbdLesson(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'number', 'title', 'theme', 'quarter', 'year', 'date', 'bibleText',
+          'goldenVerse', 'author', 'summary', 'sections', 'reflectionQuestions',
+          'practicalApplication', 'pdfFileName', 'status', 'isCurrentWeek', 'updatedAt'
+        ]) &&
+        isEbdManager();
+      allow delete: if isVerifiedUser() && isValidId(lessonId) && isSuperAdminOrPastoral();
+    }
+
+    // 7. EBD Classes
+    match /ebdClasses/{classId} {
+      allow get: if isValidId(classId);
+      allow list: if resource.data.visibility == 'public';
+      allow create: if isVerifiedUser() && isValidId(classId) && isValidEbdClass(incoming()) && isEbdManager();
+      allow update: if isVerifiedUser() &&
+        isValidId(classId) &&
+        isValidEbdClass(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'name', 'teacher', 'room', 'floor', 'schedule', 'ageGroup', 'notes', 'visibility', 'updatedAt'
+        ]) &&
+        isEbdManager();
+      allow delete: if isVerifiedUser() && isValidId(classId) && isSuperAdminOrPastoral();
+    }
+
+    // 8. Official Min. Nova Jerusalém Discography (STRICTLY Superadmin / Pastoral ONLY!)
+    match /discography/{projectId} {
+      allow get: if isValidId(projectId);
+      allow list: if resource.data.type in ['album', 'single', 'ep'];
+      allow create: if isVerifiedUser() && isValidId(projectId) && isValidDiscography(incoming()) && isSuperAdminOrPastoral();
+      allow update: if isVerifiedUser() &&
+        isValidId(projectId) &&
+        isValidDiscography(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'year', 'type', 'isRecent', 'coverImageUrl', 'artworkStyle',
+          'spotifyUrl', 'spotifyEmbedUrl', 'appleMusicUrl', 'amazonMusicUrl',
+          'youtubeUrl', 'tracks', 'updatedAt'
+        ]) &&
+        isSuperAdminOrPastoral();
+      allow delete: if isVerifiedUser() && isValidId(projectId) && isSuperAdminOrPastoral();
+    }
+
+    // 9. Ministries
+    match /ministries/{ministryId} {
+      allow get: if isValidId(ministryId);
+      allow list: if resource.data.visibility == 'public';
+      allow create: if isVerifiedUser() && isValidId(ministryId) && isValidMinistry(incoming()) && isSuperAdminOrPastoral();
+      allow update: if isVerifiedUser() &&
+        isValidId(ministryId) &&
+        isValidMinistry(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'slug', 'name', 'leader', 'description', 'arrivalTimeNote',
+          'positions', 'departments', 'checklist', 'members', 'incidents', 'rehearsals', 'visibility', 'updatedAt'
+        ]) &&
+        isAdminOrLeader();
+      allow delete: if isVerifiedUser() && isValidId(ministryId) && isSuperAdminOrPastoral();
+    }
+
+    // 10. Schedules (Ministry Volunteer Shifts)
+    match /schedules/{scheduleId} {
+      allow get: if isValidId(scheduleId) && (
+        existing().scheduleStatus in ['publicada', 'em_andamento', 'concluida'] || isAdminOrLeader()
+      );
+      allow list: if resource.data.scheduleStatus in ['publicada', 'em_andamento', 'concluida'] || isAdminOrLeader();
+      allow create: if isVerifiedUser() && isValidId(scheduleId) && isValidSchedule(incoming()) && isAdminOrLeader();
+      allow update: if isVerifiedUser() && isValidId(scheduleId) && isValidSchedule(incoming()) && (
+        // Tier 1: Leader / Admin manages full schedule slot
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'ministryId', 'ministryName', 'departmentId', 'departmentName',
+            'eventId', 'eventTitle', 'date', 'time', 'scheduleStatus',
+            'positionName', 'volunteerName', 'volunteerUid', 'volunteerStatus',
+            'swapReason', 'notes', 'updatedAt'
+          ]) &&
+          isAdminOrLeader()
+        ) ||
+        // Tier 2: Assigned volunteer responds (confirm/decline/request swap)
+        (
+          existing().scheduleStatus != 'cancelada' &&
+          existing().scheduleStatus != 'concluida' &&
+          (
+            ('volunteerUid' in existing() && existing().volunteerUid == request.auth.uid) ||
+            (existing().volunteerName == request.auth.token.name)
+          ) &&
+          incoming().volunteerStatus in ['confirmado', 'recusado', 'substituicao_solicitada'] &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['volunteerStatus', 'swapReason', 'updatedAt'])
+        )
+      );
+      allow delete: if isVerifiedUser() && isValidId(scheduleId) && isAdminOrLeader();
+    }
+
+    // 11. Cult Repertoires (Louvor Worship Songs for Scheduled Services)
+    match /repertoires/{repertoireId} {
+      allow get: if isValidId(repertoireId);
+      allow list: if resource.data.visibility == 'public';
+      allow create: if isVerifiedUser() && isValidId(repertoireId) && isValidRepertoire(incoming()) && isAdminOrLeader();
+      allow update: if isVerifiedUser() &&
+        isValidId(repertoireId) &&
+        isValidRepertoire(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'eventTitle', 'date', 'time', 'ministerName', 'musicalNotes', 'songs', 'visibility', 'updatedAt'
+        ]) &&
+        isAdminOrLeader();
+      allow delete: if isVerifiedUser() && isValidId(repertoireId) && isAdminOrLeader();
+    }
+
+    // 12. Volunteer Unavailability
+    match /unavailability/{recordId} {
+      allow get: if isSignedIn() && isValidId(recordId) && (
+        existing().userId == request.auth.uid || isAdminOrLeader()
+      );
+      allow list: if isSignedIn() && (
+        resource.data.userId == request.auth.uid || isAdminOrLeader()
+      );
+      allow create: if isVerifiedUser() &&
+        isValidId(recordId) &&
+        isValidUnavailability(incoming()) &&
+        incoming().userId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(recordId) && (
+        existing().userId == request.auth.uid || isAdminOrLeader()
+      );
+    }
+
+    // 13. Prayer Requests (LGPD Privacy Enforcement + Visitor-Open Create)
+    match /prayers/{prayerId} {
+      allow get: if isValidId(prayerId) && (
+        existing().privacy == 'comunidade' ||
+        (isSignedIn() && existing().authorId == request.auth.uid) ||
+        isSuperAdminOrPastoral()
+      );
+      allow list: if resource.data.privacy == 'comunidade' ||
+        (isSignedIn() && resource.data.authorId == request.auth.uid) ||
+        isSuperAdminOrPastoral();
+      allow create: if isValidId(prayerId) &&
+        isValidPrayer(incoming()) &&
+        incoming().status == 'recebido' &&
+        incoming().prayingCount == 1 &&
+        incoming().createdAt == request.time &&
+        (
+          (!isSignedIn() && incoming().authorId == 'visitor' && incoming().isVisitor == true) ||
+          (isSignedIn() && incoming().authorId == request.auth.uid)
+        );
+      allow update: if isVerifiedUser() &&
+        isValidId(prayerId) &&
+        isValidPrayer(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt && (
+          // Tier 1: Pastoral / Superadmin updates prayer care status (with terminal lock except bootstrap superadmin)
+          (
+            (existing().status != 'atendido' || isBootstrapSuperAdmin()) &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['status']) &&
+            isSuperAdminOrPastoral()
+          ) ||
+          // Tier 2: Verified community member intercedes (+1 only on public community prayers)
+          (
+            existing().privacy == 'comunidade' &&
+            existing().status != 'atendido' &&
+            incoming().prayingCount == existing().prayingCount + 1 &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['prayingCount'])
+          )
+        );
+      allow delete: if isVerifiedUser() && isValidId(prayerId) && isSuperAdminOrPastoral();
+    }
+
+    // 14. Broadcast Videos (YouTube Live & Recorded Sermons)
+    match /videos/{videoId} {
+      allow get: if isValidId(videoId);
+      allow list: if resource.data.visibility == 'public';
+      allow create: if isVerifiedUser() && isValidId(videoId) && isValidVideo(incoming()) && isAdminContentOrHigher();
+      allow update: if isVerifiedUser() &&
+        isValidId(videoId) &&
+        isValidVideo(incoming()) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'preacher', 'series', 'date', 'duration', 'youtubeId', 'isLive', 'description', 'visibility', 'updatedAt'
+        ]) &&
+        isAdminContentOrHigher();
+      allow delete: if isVerifiedUser() && isValidId(videoId) && isSuperAdminOrPastoral();
+    }
+
+    // 15. App Notifications
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId);
+      allow list: if resource.data.type in ['escala', 'ebd', 'evento', 'musica', 'comunicado', 'transmissao'];
+      allow create: if isVerifiedUser() && isValidId(notificationId) && isValidNotification(incoming()) && isStaff();
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(notificationId) && isSuperAdminOrPastoral();
+    }
+
+    // 16. Immutable Audit Logs
+    match /auditLogs/{logId} {
+      allow get: if isVerifiedUser() && isValidId(logId) && isAdminContentOrHigher();
+      allow list: if isAdminContentOrHigher();
+      allow create: if isVerifiedUser() &&
+        isValidId(logId) &&
+        isValidAuditLog(incoming()) &&
+        isStaff();
+      allow update, delete: if false;
+    }
+  }
+}

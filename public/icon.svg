@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="njIconBg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#213228"/>
+      <stop offset="65%" stop-color="#2D4438"/>
+      <stop offset="100%" stop-color="#466053"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#njIconBg)"/>
+  <rect x="44" y="44" width="424" height="424" rx="68" stroke="#B1D3AE" stroke-opacity="0.45" stroke-width="4"/>
+  <path d="M256 124V388" stroke="#F3F1E9" stroke-width="26" stroke-linecap="round"/>
+  <path d="M172 206H340" stroke="#F3F1E9" stroke-width="26" stroke-linecap="round"/>
+  <path d="M168 364C198 338 226 328 256 328C286 328 314 338 344 364" stroke="#B1D3AE" stroke-width="14" stroke-linecap="round"/>
+</svg>
