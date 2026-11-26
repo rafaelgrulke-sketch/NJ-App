@@ -6,11 +6,15 @@ import {
   Calendar,
   CalendarDays,
   Check,
+  ChevronDown,
+  ChevronRight,
   Clock,
   Download,
   ExternalLink,
   FileText,
+  HandHeart,
   Heart,
+  HeartHandshake,
   List,
   MapPin,
   Music,
@@ -25,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useChurch } from '../../context/ChurchContext';
 import { MUSIC_PLATFORM_CHANNELS } from '../../data/initialData';
+import { useYouTubeChannel } from '../../hooks/useYouTubeChannel';
 import { ChurchEvent, DiscographyProject, EventCategory } from '../../types/church';
 import {
   categoryLabel,
@@ -54,7 +59,7 @@ export type MemberTab =
   | 'mais';
 
 /* ==========================================================================
-   1. PÁGINA INICIAL DO MEMBRO (DINÂMICA)
+   1. PÁGINA INICIAL DO APLICATIVO (LIMPA, FOCADA E ESCANEÁVEL)
    ========================================================================== */
 export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> = ({ onNavigate }) => {
   const {
@@ -63,14 +68,14 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
     events,
     announcements,
     ebdLessons,
-    discography,
-    ministries,
     schedules,
     hasScheduleAccess,
     videos,
     notifications,
-    notify,
   } = useChurch();
+
+  const [showWeeklyHours, setShowWeeklyHours] = useState(false);
+  const youtube = useYouTubeChannel();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -78,305 +83,326 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
   const currentLesson = ebdLessons.find((l) => l.isCurrentWeek) || ebdLessons[0];
   const activeEvents = events.filter((e) => e.status !== 'cancelado');
   const nextEvent = activeEvents[0];
-  const latestRelease = discography[0];
-  const featuredVideo = videos[0];
+  const latestAnnouncement = announcements[0];
+  const featuredVideo = youtube.videos[0] || videos[0];
   const myUpcomingSchedules = schedules.filter(
     (s) => s.volunteerName === currentMemberName && s.scheduleStatus !== 'cancelada'
   );
   const pendingCount = myUpcomingSchedules.filter((s) => s.volunteerStatus === 'aguardando').length;
   const unreadNotifs = notifications.filter((n) => !n.read).length;
 
-  return (
-    <div className="space-y-8">
-      {/* Greeting + Next Service */}
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="nj-card flex flex-col justify-between p-6 sm:p-7 lg:col-span-7">
-          <div>
-            <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-              {greeting}, {currentMemberName} · {churchInfo.displayName}
-            </p>
-            <h1 className="mt-2 font-serif text-3xl font-semibold text-[var(--nj-ink)] sm:text-4xl">
-              {nextEvent ? nextEvent.title : 'Nossa Celebração'}
-            </h1>
-            {nextEvent && (
-              <p className="mt-2 text-sm text-[var(--nj-ink-muted)]">
-                {formatLongDatePtBR(nextEvent.date)} · {nextEvent.time} · {nextEvent.location}
-              </p>
-            )}
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-[var(--nj-ink-muted)]">
-              {nextEvent?.description ||
-                'Acompanhe a programação semanal, a lição da EBD Digital, suas escalas ministeriais e a discografia oficial do Ministério Nova Jerusalém.'}
-            </p>
-          </div>
+  const quickShortcuts: {
+    id: MemberTab;
+    label: string;
+    hint: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[] = [
+    {
+      id: 'agenda',
+      label: 'Programação',
+      hint: 'Cultos e Informativo NJ',
+      icon: Calendar,
+    },
+    ...(hasScheduleAccess
+      ? [
+          {
+            id: 'ministerios' as MemberTab,
+            label: 'Minhas Escalas',
+            hint:
+              pendingCount > 0
+                ? `${pendingCount} aguardando`
+                : `${myUpcomingSchedules.length} escala(s)`,
+            icon: Users,
+          },
+        ]
+      : [
+          {
+            id: 'contribuicoes' as MemberTab,
+            label: 'Contribuições',
+            hint: 'Dízimos e ofertas Pix',
+            icon: HeartHandshake,
+          },
+        ]),
+    {
+      id: 'ebd',
+      label: 'EBD Digital',
+      hint: currentLesson ? `Lição ${String(currentLesson.number).padStart(2, '0')}` : 'Estudo bíblico',
+      icon: BookOpen,
+    },
+    {
+      id: 'musica',
+      label: 'Min. NJ',
+      hint: 'Discografia e cifras',
+      icon: Music,
+    },
+    {
+      id: 'transmissoes',
+      label: 'Transmissões',
+      hint: youtube.live.isLive
+        ? 'Ao vivo agora!'
+        : youtube.videos.length > 0
+          ? `${youtube.videos.length} vídeos do canal`
+          : 'Ao vivo e cultos',
+      icon: Radio,
+    },
+    {
+      id: 'oracao',
+      label: 'Oração',
+      hint: 'Enviar pedido',
+      icon: HandHeart,
+    },
+  ];
 
-          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-[var(--nj-border)] pt-5">
+  return (
+    <div className="space-y-6">
+      {/* 1. Saudação limpa + Sino de Notificações */}
+      <header className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-[var(--nj-accent-text)]">
+            {churchInfo.displayName}
+          </p>
+          <h1 className="mt-0.5 truncate font-serif text-2xl font-semibold text-[var(--nj-ink)] sm:text-3xl">
+            {greeting}, {currentMemberName}
+          </h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => onNavigate('notificacoes')}
+          aria-label={unreadNotifs > 0 ? `${unreadNotifs} notificações não lidas` : 'Abrir notificações'}
+          className="nj-icon-btn relative shrink-0"
+        >
+          <Bell className="h-4 w-4" aria-hidden="true" />
+          {unreadNotifs > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--nj-accent)] px-1 font-mono text-[10px] font-semibold text-white tabular-nums">
+              {unreadNotifs}
+            </span>
+          )}
+        </button>
+      </header>
+
+      {/* 2. Único Cartão Focal — Culto Ao Vivo (automático) ou Próximo Culto */}
+      {youtube.live.isLive ? (
+        <section className="relative overflow-hidden rounded-2xl border border-red-500/30 bg-gradient-to-br from-[#7F1D1D] via-[#991B1B] to-[#0F513D] p-5 text-white shadow-[var(--nj-shadow-md)] sm:p-6">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div className="min-w-0">
+              <p className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-widest uppercase text-red-100">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-300" aria-hidden="true" />
+                Ao Vivo Agora · YouTube Oficial
+              </p>
+              <h2 className="mt-1.5 font-serif text-2xl font-semibold text-white sm:text-3xl">
+                {youtube.live.title || 'Culto Ao Vivo — Nova Jerusalém Sampaio'}
+              </h2>
+              <p className="mt-1.5 text-xs text-white/90 sm:text-sm">
+                A transmissão do culto está no ar agora mesmo no canal da igreja.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('transmissoes')}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-[#991B1B] shadow-sm transition hover:bg-red-50"
+            >
+              <Radio className="h-3.5 w-3.5" aria-hidden="true" />
+              Assistir agora
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="relative overflow-hidden rounded-2xl border border-[var(--nj-border)] bg-gradient-to-br from-[#0A5C43] via-[#0F7656] to-[#168A66] p-5 text-white shadow-[var(--nj-shadow-md)] sm:p-6">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-[#A7F3D0]">
+                Próximo Culto
+              </p>
+              <h2 className="mt-1.5 font-serif text-2xl font-semibold text-white sm:text-3xl">
+                {nextEvent ? nextEvent.title : 'Nossa Celebração'}
+              </h2>
+              <p className="mt-1.5 text-xs text-white/90 sm:text-sm tabular-nums">
+                {nextEvent
+                  ? `${formatLongDatePtBR(nextEvent.date)} · ${nextEvent.time}`
+                  : 'Domingos às 10h10 e 19h00'}
+              </p>
+              <p className="mt-0.5 text-xs text-white/75">
+                {nextEvent?.location || `${churchInfo.address}, ${churchInfo.neighborhood}`}
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => onNavigate('agenda')}
-              className="nj-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-xs font-semibold text-[#0A5C43] shadow-sm transition hover:bg-[#ECFDF5]"
             >
-              Agenda e Informativo NJ
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              Ver programação
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('igreja')}
-              className="nj-btn-secondary inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm"
-            >
-              Conheça Nossa Igreja
-            </button>
-            {unreadNotifs > 0 && (
-              <button
-                type="button"
-                onClick={() => onNavigate('notificacoes')}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--nj-accent-text)] hover:underline"
-              >
-                <Bell className="h-3.5 w-3.5" aria-hidden="true" />
-                {unreadNotifs} notificações não lidas
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Programação Semanal + Minhas Escalas */}
-        <div className="flex flex-col gap-5 lg:col-span-5">
-          <div className="nj-card p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl font-semibold text-[var(--nj-ink)]">Programação Semanal</h2>
-              <Clock className="h-4 w-4 text-[var(--nj-accent-text)]" aria-hidden="true" />
-            </div>
-            <ul className="mt-3 divide-y divide-[var(--nj-border)] text-sm">
-              {churchInfo.weeklyServices.map((srv) => (
-                <li key={srv.id} className="flex items-baseline justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                  <div>
-                    <p className="font-medium text-[var(--nj-ink)]">{srv.title}</p>
-                    <p className="text-xs text-[var(--nj-ink-subtle)]">{srv.day} · {srv.location}</p>
-                  </div>
-                  <span className="font-mono text-xs font-medium text-[var(--nj-accent-text)] tabular-nums shrink-0">
-                    {srv.time}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {hasScheduleAccess && (
-            <div className="nj-card-olive flex items-center justify-between gap-4 p-5">
-              <div>
-                <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-                  Minhas Escalas
-                </p>
-                <p className="mt-1 text-sm font-medium text-[var(--nj-ink)]">
-                  {myUpcomingSchedules.length} escala(s) atribuída(s)
-                  {pendingCount > 0 ? ` · ${pendingCount} aguardando confirmação` : ''}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => onNavigate('ministerios')}
-                className="nj-btn-secondary shrink-0 rounded-md px-3.5 py-2 text-xs"
-              >
-                Ver escalas
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Current EBD Lesson (Warm Paper Editorial Surface) */}
-      {currentLesson && (
-        <section className="nj-paper rounded-xl p-6 sm:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl">
-              <p className="text-xs font-medium tracking-widest uppercase text-[#466053]">
-                EBD Digital · Lição {String(currentLesson.number).padStart(2, '0')} · {currentLesson.quarter}
-              </p>
-              <h2 className="mt-1.5 font-serif text-2xl font-semibold text-[#213228] sm:text-3xl">
-                {currentLesson.title}
-              </h2>
-              <p className="mt-1 text-xs font-medium text-[#5D705D]">
-                {currentLesson.bibleText} · {currentLesson.author} · {formatDatePtBR(currentLesson.date)}
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-[#2D3F34]">{currentLesson.summary}</p>
-            </div>
-            <div className="flex flex-wrap gap-2.5">
-              <button
-                type="button"
-                onClick={() => onNavigate('ebd')}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#0F7656] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#0B5E44]"
-              >
-                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                Ler online
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  downloadEbdLessonPdf(currentLesson);
-                  notify(`PDF "${currentLesson.pdfFileName}" baixado.`);
-                }}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#0F7656]/35 bg-transparent px-4 py-2 text-xs font-semibold text-[#0C6B4E] transition hover:bg-[#0F7656]/10"
-              >
-                <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                Baixar PDF
-              </button>
-            </div>
           </div>
         </section>
       )}
 
-      {/* Quick Access to Authorized Ministries Only */}
-      {hasScheduleAccess && ministries.length > 0 && (
-        <section>
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-                Meus Ministérios
-              </p>
-              <h2 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
-                Equipes e escalas liberadas para você
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => onNavigate('ministerios')}
-              className="text-xs font-medium text-[var(--nj-accent-text)] hover:underline"
-            >
-              Abrir escalas →
-            </button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {ministries.slice(0, 5).map((min) => {
-            const count = schedules.filter((s) => s.ministryId === min.id).length;
+      {/* 3. Acesso Rápido (Grade 2x3 no mobile, 3x2 no desktop) */}
+      <section aria-label="Acesso rápido">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {quickShortcuts.map((item) => {
+            const Icon = item.icon;
             return (
               <button
-                key={min.id}
+                key={item.id}
                 type="button"
-                onClick={() => onNavigate('ministerios')}
-                className="nj-card flex flex-col justify-between p-4 text-left transition hover:border-[var(--nj-border-strong)]"
+                onClick={() => onNavigate(item.id)}
+                className="nj-card nj-card-interactive flex min-h-[88px] flex-col justify-between p-4 text-left"
               >
-                <div>
-                  <p className="font-serif text-lg font-semibold text-[var(--nj-ink)]">{min.name}</p>
-                  <p className="mt-1 text-xs text-[var(--nj-ink-subtle)]">
-                    {min.departments ? `${min.departments.length} áreas internas` : `${min.positions.length} funções`}
-                  </p>
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="mt-3 min-w-0">
+                  <p className="truncate text-sm font-semibold text-[var(--nj-ink)]">{item.label}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-[var(--nj-ink-subtle)]">{item.hint}</p>
                 </div>
-                <p className="mt-4 text-xs font-medium text-[var(--nj-accent-text)] tabular-nums">
-                  {count} escalado(s) · Líder: {min.leader}
-                </p>
               </button>
             );
           })}
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {/* Announcements + Broadcast + Music Release */}
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Announcements */}
-        <div className="nj-card p-6 lg:col-span-5">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-2xl font-semibold text-[var(--nj-ink)]">Comunicados Recentes</h2>
-            <span className="text-xs text-[var(--nj-ink-subtle)]">{announcements.length} ativos</span>
-          </div>
-          <div className="mt-4 divide-y divide-[var(--nj-border)]">
-            {announcements.slice(0, 4).map((ann) => (
-              <article key={ann.id} className="py-3.5 first:pt-0 last:pb-0">
-                <p className="text-xs text-[var(--nj-accent-text)]">
-                  {ann.department} · {formatDatePtBR(ann.date)}
-                  {ann.priority === 'importante' ? ' · Prioritário' : ''}
-                </p>
-                <h3 className="mt-1 text-sm font-semibold text-[var(--nj-ink)]">{ann.title}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-[var(--nj-ink-muted)]">{ann.body}</p>
-              </article>
+      {/* 4. Resumo da Semana (3 linhas enxutas clicáveis — sem bloco pesado de texto) */}
+      <section className="nj-card overflow-hidden">
+        <div className="border-b border-[var(--nj-border)] px-5 py-3.5">
+          <h2 className="text-xs font-semibold tracking-wider uppercase text-[var(--nj-ink-subtle)]">
+            Destaques da Semana
+          </h2>
+        </div>
+
+        <div className="divide-y divide-[var(--nj-border)]">
+          {currentLesson && (
+            <button
+              type="button"
+              onClick={() => onNavigate('ebd')}
+              className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition hover:bg-[var(--nj-surface-alt)]"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
+                  <BookOpen className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium text-[var(--nj-accent-text)]">
+                    EBD Digital · Lição {String(currentLesson.number).padStart(2, '0')}
+                  </p>
+                  <p className="truncate text-sm font-semibold text-[var(--nj-ink)]">
+                    {currentLesson.title}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--nj-ink-subtle)]" aria-hidden="true" />
+            </button>
+          )}
+
+          {latestAnnouncement && (
+            <button
+              type="button"
+              onClick={() => onNavigate('notificacoes')}
+              className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition hover:bg-[var(--nj-surface-alt)]"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
+                  <Bell className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium text-[var(--nj-accent-text)]">
+                    Comunicado · {latestAnnouncement.department}
+                  </p>
+                  <p className="truncate text-sm font-semibold text-[var(--nj-ink)]">
+                    {latestAnnouncement.title}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--nj-ink-subtle)]" aria-hidden="true" />
+            </button>
+          )}
+
+          {hasScheduleAccess ? (
+            <button
+              type="button"
+              onClick={() => onNavigate('ministerios')}
+              className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition hover:bg-[var(--nj-surface-alt)]"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
+                  <Users className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium text-[var(--nj-accent-text)]">
+                    Minhas Escalas
+                  </p>
+                  <p className="truncate text-sm font-semibold text-[var(--nj-ink)]">
+                    {myUpcomingSchedules[0]
+                      ? `${myUpcomingSchedules[0].positionName} · ${formatDatePtBR(myUpcomingSchedules[0].date)} (${myUpcomingSchedules[0].time})`
+                      : 'Consultar escalas liberadas'}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--nj-ink-subtle)]" aria-hidden="true" />
+            </button>
+          ) : featuredVideo ? (
+            <button
+              type="button"
+              onClick={() => onNavigate('transmissoes')}
+              className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition hover:bg-[var(--nj-surface-alt)]"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--nj-accent-soft)] text-[var(--nj-accent-text)]">
+                  <Radio className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium text-[var(--nj-accent-text)]">
+                    Última transmissão · {featuredVideo.preacher}
+                  </p>
+                  <p className="truncate text-sm font-semibold text-[var(--nj-ink)]">
+                    {featuredVideo.title}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--nj-ink-subtle)]" aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+      </section>
+
+      {/* 5. Horários Fixos (Recolhido por padrão para manter a tela inicial leve) */}
+      <section className="nj-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowWeeklyHours((prev) => !prev)}
+          aria-expanded={showWeeklyHours}
+          className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition hover:bg-[var(--nj-surface-alt)]"
+        >
+          <span className="flex items-center gap-2.5 text-sm font-semibold text-[var(--nj-ink)]">
+            <Clock className="h-4 w-4 text-[var(--nj-accent-text)]" aria-hidden="true" />
+            Horários dos cultos semanais
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 text-[var(--nj-ink-subtle)] transition-transform duration-200 ${
+              showWeeklyHours ? 'rotate-180' : ''
+            }`}
+            aria-hidden="true"
+          />
+        </button>
+
+        {showWeeklyHours && (
+          <ul className="divide-y divide-[var(--nj-border)] border-t border-[var(--nj-border)] px-5 py-2 text-sm">
+            {churchInfo.weeklyServices.map((srv) => (
+              <li key={srv.id} className="flex items-baseline justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-[var(--nj-ink)]">{srv.title}</p>
+                  <p className="text-xs text-[var(--nj-ink-subtle)]">
+                    {srv.day} · {srv.location}
+                  </p>
+                </div>
+                <span className="shrink-0 font-mono text-xs font-medium text-[var(--nj-accent-text)] tabular-nums">
+                  {srv.time}
+                </span>
+              </li>
             ))}
-          </div>
-        </div>
-
-        {/* Min. Nova Jerusalém + Transmissões */}
-        <div className="space-y-6 lg:col-span-7">
-          {latestRelease && (
-            <div className="nj-card grid grid-cols-1 overflow-hidden sm:grid-cols-12">
-              <AlbumCoverArt
-                variant={0}
-                title={latestRelease.title}
-                year={latestRelease.year}
-                className="min-h-[160px] sm:col-span-5"
-              />
-              <div className="flex flex-col justify-between p-5 sm:col-span-7">
-                <div>
-                  <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-                    Min. Nova Jerusalém · Lançamento {latestRelease.year}
-                  </p>
-                  <h3 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
-                    {latestRelease.title}
-                  </h3>
-                  <p className="mt-1.5 text-xs leading-relaxed text-[var(--nj-ink-muted)]">
-                    Discografia completa com {discography.length} projetos de 2001 a 2025, cifras, letras e integração ao repertório do louvor.
-                  </p>
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('musica')}
-                    className="nj-btn-primary inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-xs"
-                  >
-                    <Music className="h-3.5 w-3.5" aria-hidden="true" />
-                    Explorar discografia
-                  </button>
-                  <a
-                    href={MUSIC_PLATFORM_CHANNELS.spotifyAlbumUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="nj-btn-secondary inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs"
-                  >
-                    Spotify <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {featuredVideo && (
-            <div className="nj-card flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
-              <div>
-                <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-                  Transmissões e Mensagens · {featuredVideo.series}
-                </p>
-                <h3 className="mt-1 font-serif text-xl font-semibold text-[var(--nj-ink)]">
-                  {featuredVideo.title}
-                </h3>
-                <p className="mt-1 text-xs text-[var(--nj-ink-muted)]">
-                  {featuredVideo.preacher} · {formatDatePtBR(featuredVideo.date)} · {featuredVideo.duration}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => onNavigate('transmissoes')}
-                className="nj-btn-secondary inline-flex shrink-0 items-center gap-2 rounded-md px-4 py-2 text-xs"
-              >
-                <Radio className="h-3.5 w-3.5" aria-hidden="true" />
-                Assistir cultos
-              </button>
-            </div>
-          )}
-
-          {/* Official Channels Strip */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--nj-border)] bg-[var(--nj-surface-alt)] px-4 py-3 text-xs text-[var(--nj-ink-muted)]">
-            <span>Canais oficiais da Nova Jerusalém Sampaio:</span>
-            <div className="flex flex-wrap gap-4 font-medium text-[var(--nj-accent-text)]">
-              <a href={churchInfo.instagramUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                Instagram ({churchInfo.instagramHandle})
-              </a>
-              <a href={churchInfo.youtubeUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                YouTube Oficial
-              </a>
-              <a href={churchInfo.websiteUrl} target="_blank" rel="noreferrer" className="hover:underline">
-                Site Institucional
-              </a>
-            </div>
-          </div>
-        </div>
+          </ul>
+        )}
       </section>
     </div>
   );

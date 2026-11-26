@@ -6,6 +6,7 @@ import express from 'express';
 import { getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { createServer as createViteServer } from 'vite';
+import { fetchYouTubeChannelSync } from './api/_youtubeSync.ts';
 
 const PORT = Number(process.env.PORT) || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -326,6 +327,36 @@ async function startServer() {
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
+  });
+
+  app.get('/api/youtube', async (req, res) => {
+    try {
+      const forceRefresh = req.query.refresh === '1';
+      const payload = await fetchYouTubeChannelSync(forceRefresh);
+      res.setHeader(
+        'Cache-Control',
+        forceRefresh ? 'no-store' : 'public, s-maxage=120, stale-while-revalidate=300'
+      );
+      res.json(payload);
+    } catch {
+      res.setHeader('Cache-Control', 'no-store');
+      res.json({
+        ok: false,
+        channelId: 'UCFRiks_8zTRq8zcuUq0sjJw',
+        channelTitle: 'Nova Jerusalém Sampaio',
+        syncedAt: new Date().toISOString(),
+        live: {
+          isLive: false,
+          videoId: null,
+          title: null,
+          watchUrl: 'https://www.youtube.com/channel/UCFRiks_8zTRq8zcuUq0sjJw/live',
+          embedUrl: 'https://www.youtube.com/embed/live_stream?channel=UCFRiks_8zTRq8zcuUq0sjJw',
+          thumbnailUrl: null,
+          source: 'fallback',
+        },
+        videos: [],
+      });
+    }
   });
 
   app.post(

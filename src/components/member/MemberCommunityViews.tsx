@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Bell,
   BookMarked,
@@ -9,8 +9,10 @@ import {
   ExternalLink,
   HandHeart,
   Lock,
+  Play,
   Plus,
   Radio,
+  RefreshCw,
   Search,
   Share2,
   ShieldCheck,
@@ -18,8 +20,10 @@ import {
 } from 'lucide-react';
 import { useChurch } from '../../context/ChurchContext';
 import { MUSIC_PLATFORM_CHANNELS } from '../../data/initialData';
-import { PrayerPrivacy } from '../../types/church';
+import { useYouTubeChannel } from '../../hooks/useYouTubeChannel';
+import { BroadcastVideo, PrayerPrivacy } from '../../types/church';
 import { buildPixCopyPaste, formatDatePtBR } from '../../utils/formatters';
+import { safeYoutubeId } from '../../utils/security';
 import { PixQrCodeSvg } from '../EditorialArt';
 import { MemberTab } from './MemberCoreViews';
 
@@ -180,20 +184,57 @@ export const PrayerRequestsView: React.FC = () => {
 };
 
 /* ==========================================================================
-   2. TRANSMISSÕES E MENSAGENS (YOUTUBE OFICIAL)
+   2. TRANSMISSÕES E MENSAGENS (YOUTUBE OFICIAL COM SINCRONIZAÇÃO AUTOMÁTICA)
    ========================================================================== */
 export const BroadcastsView: React.FC = () => {
-  const { churchInfo, videos, notify } = useChurch();
-  const [playerMode, setPlayerMode] = useState<'live' | 'gravadas'>('live');
-  const [selectedId, setSelectedId] = useState(videos[0]?.id || '');
+  const { churchInfo, videos: storedVideos, notify } = useChurch();
+  const youtube = useYouTubeChannel();
+
+  const [playerMode, setPlayerMode] = useState<'live' | 'gravadas'>(() =>
+    youtube.live.isLive ? 'live' : 'gravadas'
+  );
+  const [userPickedMode, setUserPickedMode] = useState(false);
+  const [selectedId, setSelectedId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [seriesFilter, setSeriesFilter] = useState('todas');
 
-  const seriesList = useMemo(() => Array.from(new Set(videos.map((v) => v.series))), [videos]);
+  // Auto-switch to Live mode as soon as a live broadcast is detected (unless user manually picked a tab)
+  useEffect(() => {
+    if (!userPickedMode) {
+      setPlayerMode(youtube.live.isLive ? 'live' : 'gravadas');
+    }
+  }, [youtube.live.isLive, userPickedMode]);
+
+  // Merge automatically synced YouTube videos (newest first) + manually saved Firestore videos (deduplicated)
+  const mergedVideos = useMemo<BroadcastVideo[]>(() => {
+    const seenIds = new Set<string>();
+    const combined: BroadcastVideo[] = [];
+
+    for (const ytVid of youtube.videos) {
+      const cleanId = safeYoutubeId(ytVid.youtubeId);
+      if (!cleanId || seenIds.has(cleanId)) continue;
+      seenIds.add(cleanId);
+      combined.push(ytVid);
+    }
+
+    for (const saved of storedVideos) {
+      const cleanId = safeYoutubeId(saved.youtubeId);
+      if (!cleanId || seenIds.has(cleanId)) continue;
+      seenIds.add(cleanId);
+      combined.push(saved);
+    }
+
+    return combined;
+  }, [youtube.videos, storedVideos]);
+
+  const seriesList = useMemo(
+    () => Array.from(new Set(mergedVideos.map((v) => v.series))),
+    [mergedVideos]
+  );
 
   const filteredVideos = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return videos.filter((v) => {
+    return mergedVideos.filter((v) => {
       const matchSeries = seriesFilter === 'todas' || v.series === seriesFilter;
       const matchSearch =
         !q ||
@@ -202,52 +243,87 @@ export const BroadcastsView: React.FC = () => {
         v.series.toLowerCase().includes(q);
       return matchSeries && matchSearch;
     });
-  }, [videos, seriesFilter, searchTerm]);
+  }, [mergedVideos, seriesFilter, searchTerm]);
 
-  const currentVideo = videos.find((v) => v.id === selectedId) || filteredVideos[0] || videos[0];
+  const currentVideo =
+    mergedVideos.find((v) => v.id === selectedId) || filteredVideos[0] || mergedVideos[0];
+
+  const currentVideoSafeId = safeYoutubeId(currentVideo?.youtubeId);
+  const activeShareUrl =
+    playerMode === 'live'
+      ? youtube.live.watchUrl
+      : currentVideoSafeId
+        ? `https://www.youtube.com/watch?v=${currentVideoSafeId}`
+        : MUSIC_PLATFORM_CHANNELS.youtubeChurchLiveUrl;
 
   const handleShare = async (title: string) => {
     try {
-      await navigator.clipboard.writeText(`${title} — Assista no canal oficial da Nova Jerusalém Sampaio: ${MUSIC_PLATFORM_CHANNELS.youtubeChurchLiveUrl}`);
+      await navigator.clipboard.writeText(
+        `${title} — Assista no canal oficial da Nova Jerusalém Sampaio: ${activeShareUrl}`
+      );
       notify('Link da transmissão copiado para compartilhar.');
     } catch {
       notify('Link da transmissão pronto para compartilhar.');
     }
   };
 
+  const handleManualRefresh = async () => {
+    const updated = await youtube.refresh();
+    if (updated.live.isLive) {
+      setPlayerMode('live');
+      setUserPickedMode(false);
+      notify('Transmissão ao vivo detectada no canal oficial!');
+    } else if (updated.videos.length > 0) {
+      notify(`Canal sincronizado (${updated.videos.length} vídeo(s) mais recentes).`);
+    } else {
+      notify('Verificação concluída com o canal do YouTube.');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--nj-border)] pb-6">
-        <div>
-          <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-            Conexão Oficial YouTube · Canal Nova Jerusalém Sampaio
-          </p>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
+              YouTube Conectado Automaticamente · Canal Oficial
+            </p>
+            {youtube.live.isLive && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase text-white">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-hidden="true" />
+                Ao Vivo Agora
+              </span>
+            )}
+          </div>
           <h1 className="mt-2 font-serif text-3xl font-semibold text-[var(--nj-ink)] sm:text-4xl">
             Live dos cultos e pregações gravadas
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-[var(--nj-ink-muted)]">
-            Entre diretamente na transmissão ao vivo no YouTube quando o culto estiver acontecendo ou assista às pregações gravadas do nosso canal.
+            Quando o culto entra ao vivo no YouTube, ele aparece automaticamente aqui. As novas pregações publicadas no canal também são atualizadas sozinhas.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleManualRefresh}
+            disabled={youtube.refreshing}
+            className="nj-btn-secondary inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs disabled:opacity-60"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${youtube.refreshing ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
+            {youtube.refreshing ? 'Atualizando...' : 'Atualizar canal'}
+          </button>
           <a
-            href={MUSIC_PLATFORM_CHANNELS.youtubeChurchLiveUrl}
+            href={youtube.live.watchUrl}
             target="_blank"
             rel="noreferrer"
             className="nj-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2 text-xs"
           >
             <Radio className="h-3.5 w-3.5" aria-hidden="true" />
-            Entrar na Live (YouTube)
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-          </a>
-          <a
-            href={MUSIC_PLATFORM_CHANNELS.youtubeChurchVideosUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="nj-btn-secondary inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs"
-          >
-            Pregações no YouTube
+            {youtube.live.isLive ? 'Assistir Live no YouTube' : 'Abrir canal no YouTube'}
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </div>
@@ -258,21 +334,30 @@ export const BroadcastsView: React.FC = () => {
         <div className="nj-tabs">
           <button
             type="button"
-            onClick={() => setPlayerMode('live')}
-            className={`rounded-md px-4 py-2 text-xs font-medium ${
+            onClick={() => {
+              setPlayerMode('live');
+              setUserPickedMode(true);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-medium ${
               playerMode === 'live' ? 'nj-tab-active' : 'nj-tab-idle'
             }`}
           >
-            Transmissão Ao Vivo (YouTube Live)
+            {youtube.live.isLive && (
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
+            )}
+            {youtube.live.isLive ? 'Culto Ao Vivo Agora' : 'Transmissão Ao Vivo'}
           </button>
           <button
             type="button"
-            onClick={() => setPlayerMode('gravadas')}
+            onClick={() => {
+              setPlayerMode('gravadas');
+              setUserPickedMode(true);
+            }}
             className={`rounded-md px-4 py-2 text-xs font-medium ${
               playerMode === 'gravadas' ? 'nj-tab-active' : 'nj-tab-idle'
             }`}
           >
-            Pregações Gravadas ({videos.length})
+            Pregações Publicadas ({mergedVideos.length})
           </button>
         </div>
 
@@ -288,74 +373,131 @@ export const BroadcastsView: React.FC = () => {
 
       {/* Main Player */}
       <section className="nj-card overflow-hidden">
-        <div className="aspect-video w-full bg-[#15211A]">
-          <iframe
-            title={playerMode === 'live' ? `Transmissão Ao Vivo — ${churchInfo.displayName}` : currentVideo?.title || 'Pregação gravada'}
-            src={
-              playerMode === 'live'
-                ? MUSIC_PLATFORM_CHANNELS.youtubeChurchLiveEmbedUrl
-                : `https://www.youtube.com/embed/${currentVideo?.youtubeId}`
-            }
-            className="h-full w-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="aspect-video w-full bg-[#10241C]">
+          {playerMode === 'live' ? (
+            <iframe
+              title={
+                youtube.live.isLive && youtube.live.title
+                  ? youtube.live.title
+                  : `Transmissão Ao Vivo — ${churchInfo.displayName}`
+              }
+              src={youtube.live.embedUrl}
+              className="h-full w-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : currentVideoSafeId ? (
+            <iframe
+              title={currentVideo?.title || 'Pregação gravada'}
+              src={`https://www.youtube.com/embed/${currentVideoSafeId}?rel=0`}
+              className="h-full w-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-6 text-center text-sm text-white/80">
+              Selecione uma pregação abaixo ou abra o canal oficial no YouTube.
+            </div>
+          )}
         </div>
 
         {playerMode === 'live' ? (
-          <div className="flex flex-wrap items-center justify-between gap-4 p-6">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+            <div className="min-w-0">
               <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
-                Canal Oficial Conectado · YouTube Live
+                {youtube.live.isLive
+                  ? 'Transmissão Ativa Agora · YouTube Live'
+                  : 'Canal Oficial Conectado · YouTube Live'}
               </p>
               <h2 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
-                Culto Ao Vivo — {churchInfo.displayName}
+                {youtube.live.isLive && youtube.live.title
+                  ? youtube.live.title
+                  : `Culto Ao Vivo — ${churchInfo.displayName}`}
               </h2>
               <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[var(--nj-ink-muted)]">
-                Horários de transmissão: Quintas às 19h30 (Culto do Renovo) e Domingos às 10h10 (Culto Pastoral) e 19h00 (Nossa Celebração). Caso não haja culto no ar agora, selecione uma pregação gravada abaixo.
+                {youtube.live.isLive
+                  ? 'A live foi identificada automaticamente no canal oficial da igreja. Assista por aqui ou compartilhe com alguém.'
+                  : 'Nenhuma live ativa neste instante. Horários de transmissão: Quintas às 19h30 (Culto do Renovo) e Domingos às 10h10 (Culto Pastoral) e 19h00 (Nossa Celebração).'}
               </p>
             </div>
-            <a
-              href={MUSIC_PLATFORM_CHANNELS.youtubeChurchLiveUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="nj-btn-primary inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-xs shrink-0"
-            >
-              Abrir Live no app do YouTube
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
-          </div>
-        ) : (
-          currentVideo && (
-            <div className="flex flex-wrap items-start justify-between gap-4 p-6">
-              <div>
-                <p className="text-xs font-medium text-[var(--nj-accent-text)]">
-                  Pregação Gravada · {currentVideo.series} · {formatDatePtBR(currentVideo.date)} · {currentVideo.duration}
-                </p>
-                <h2 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
-                  {currentVideo.title}
-                </h2>
-                <p className="mt-1 text-xs text-[var(--nj-ink-subtle)]">{currentVideo.preacher}</p>
-                <p className="mt-2 max-w-2xl text-sm text-[var(--nj-ink-muted)]">{currentVideo.description}</p>
-              </div>
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => handleShare(currentVideo.title)}
+                onClick={() =>
+                  handleShare(
+                    youtube.live.title || `Culto Ao Vivo — ${churchInfo.displayName}`
+                  )
+                }
                 className="nj-btn-secondary inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs"
               >
                 <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
                 Compartilhar
               </button>
+              <a
+                href={youtube.live.watchUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="nj-btn-primary inline-flex shrink-0 items-center gap-1.5 rounded-md px-4 py-2 text-xs"
+              >
+                Abrir no app do YouTube
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        ) : (
+          currentVideo && (
+            <div className="flex flex-wrap items-start justify-between gap-4 p-5 sm:p-6">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-[var(--nj-accent-text)]">
+                  {currentVideo.isLive ? 'Transmissão Ao Vivo' : 'Pregação Publicada'} ·{' '}
+                  {currentVideo.series} · {formatDatePtBR(currentVideo.date)}
+                </p>
+                <h2 className="mt-1 font-serif text-2xl font-semibold text-[var(--nj-ink)]">
+                  {currentVideo.title}
+                </h2>
+                <p className="mt-1 text-xs text-[var(--nj-ink-subtle)]">{currentVideo.preacher}</p>
+                <p className="mt-2 max-w-2xl text-sm text-[var(--nj-ink-muted)]">
+                  {currentVideo.description}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleShare(currentVideo.title)}
+                  className="nj-btn-secondary inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs"
+                >
+                  <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  Compartilhar
+                </button>
+                {currentVideoSafeId && (
+                  <a
+                    href={`https://www.youtube.com/watch?v=${currentVideoSafeId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="nj-btn-primary inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs"
+                  >
+                    Ver no YouTube
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  </a>
+                )}
+              </div>
             </div>
           )
         )}
       </section>
 
-      {/* Search + Series Filter for Recorded Sermons */}
+      {/* Search + Series Filter for Published Sermons */}
       <div className="space-y-3">
-        <h2 className="font-serif text-2xl font-semibold text-[var(--nj-ink)]">
-          Acervo de Pregações Gravadas
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-serif text-2xl font-semibold text-[var(--nj-ink)]">
+            Acervo de Pregações do Canal
+          </h2>
+          {youtube.videos.length > 0 && (
+            <span className="text-xs text-[var(--nj-ink-subtle)]">
+              Sincronizado automaticamente com o YouTube
+            </span>
+          )}
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             <button
@@ -398,31 +540,72 @@ export const BroadcastsView: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredVideos.map((vid) => (
-          <button
-            key={vid.id}
-            type="button"
-            onClick={() => {
-              setSelectedId(vid.id);
-              setPlayerMode('gravadas');
-            }}
-            className={`nj-card p-5 text-left transition ${
-              playerMode === 'gravadas' && vid.id === currentVideo?.id
-                ? 'ring-2 ring-[#B1D3AE]'
-                : 'hover:border-[var(--nj-border-strong)]'
-            }`}
-          >
-            <p className="text-xs text-[var(--nj-accent-text)]">
-              {vid.series} · {vid.duration}
-            </p>
-            <h3 className="mt-1 font-serif text-lg font-semibold text-[var(--nj-ink)]">{vid.title}</h3>
-            <p className="mt-1 text-xs text-[var(--nj-ink-subtle)]">
-              {vid.preacher} · {formatDatePtBR(vid.date)}
-            </p>
-          </button>
-        ))}
-      </div>
+      {youtube.loading && mergedVideos.length === 0 ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((idx) => (
+            <div key={idx} className="nj-card overflow-hidden p-4">
+              <div className="aspect-video w-full animate-pulse rounded-lg bg-[var(--nj-surface-alt)]" />
+              <div className="mt-3 h-3 w-24 animate-pulse rounded bg-[var(--nj-surface-alt)]" />
+              <div className="mt-2 h-4 w-3/4 animate-pulse rounded bg-[var(--nj-surface-alt)]" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredVideos.map((vid) => {
+            const vidId = safeYoutubeId(vid.youtubeId);
+            const isSelected = playerMode === 'gravadas' && vid.id === currentVideo?.id;
+            return (
+              <button
+                key={vid.id}
+                type="button"
+                onClick={() => {
+                  setSelectedId(vid.id);
+                  setPlayerMode('gravadas');
+                  setUserPickedMode(true);
+                }}
+                className={`nj-card group overflow-hidden text-left transition ${
+                  isSelected
+                    ? 'ring-2 ring-[var(--nj-accent)]'
+                    : 'hover:border-[var(--nj-border-strong)]'
+                }`}
+              >
+                {vidId && (
+                  <div className="relative aspect-video w-full overflow-hidden bg-[#10241C]">
+                    <img
+                      src={`https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`}
+                      alt={vid.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-[#0A5C43] shadow-md">
+                        <Play className="ml-0.5 h-4 w-4 fill-current" aria-hidden="true" />
+                      </span>
+                    </span>
+                    {vid.isLive && (
+                      <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded bg-red-600 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
+                        Ao Vivo
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div className="p-4">
+                  <p className="text-xs text-[var(--nj-accent-text)]">
+                    {vid.series} · {formatDatePtBR(vid.date)}
+                  </p>
+                  <h3 className="mt-1 line-clamp-2 font-serif text-lg font-semibold text-[var(--nj-ink)]">
+                    {vid.title}
+                  </h3>
+                  <p className="mt-1 truncate text-xs text-[var(--nj-ink-subtle)]">
+                    {vid.preacher}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
