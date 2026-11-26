@@ -26,8 +26,8 @@ export default defineConfig(() => {
           short_name: 'NJ App',
           description:
             'Plataforma oficial da Igreja Batista em Renovação Espiritual Nova Jerusalém — cultos, EBD Digital, Min. Nova Jerusalém e escalas ministeriais.',
-          theme_color: '#213228',
-          background_color: '#213228',
+          theme_color: '#0F7656',
+          background_color: '#F8F9F8',
           display: 'standalone',
           start_url: '/',
           scope: '/',

@@ -287,11 +287,32 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+    const isDark = theme === 'dark';
+    root.classList.toggle('dark', isDark);
+    root.dataset.theme = theme;
+    root.style.colorScheme = isDark ? 'only dark' : 'only light';
+
+    const schemeContent = isDark ? 'dark only' : 'light only';
+    let colorSchemeMeta = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
+    if (!colorSchemeMeta) {
+      colorSchemeMeta = document.createElement('meta');
+      colorSchemeMeta.name = 'color-scheme';
+      document.head.appendChild(colorSchemeMeta);
     }
+    colorSchemeMeta.content = schemeContent;
+
+    const supportedSchemeMeta = document.querySelector<HTMLMetaElement>(
+      'meta[name="supported-color-schemes"]'
+    );
+    if (supportedSchemeMeta) {
+      supportedSchemeMeta.content = schemeContent;
+    }
+
+    const themeColorMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.content = isDark ? '#13231D' : '#0F7656';
+    }
+
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch {

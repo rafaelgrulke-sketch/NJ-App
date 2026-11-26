@@ -22,7 +22,8 @@
    60% Soft Light Canvas (#F8F9F8) · 30% Crisp White Surfaces · 10% Vibrant Emerald (#0F7656)
    ============================================================================ */
 :root {
-  color-scheme: light;
+  color-scheme: only light;
+  forced-color-adjust: none;
 
   /* Surfaces */
   --nj-canvas: #F8F9F8;
@@ -93,7 +94,8 @@
    Refined Deep Emerald-Slate Canvas with Luminous Mint-Emerald Accents
    ============================================================================ */
 .dark {
-  color-scheme: dark;
+  color-scheme: only dark;
+  forced-color-adjust: none;
 
   --nj-canvas: #13231D;
   --nj-canvas-alt: #0F1C17;
