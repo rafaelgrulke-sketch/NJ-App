@@ -100,19 +100,19 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
   };
 
   return (
-    <div className="min-h-screen bg-[var(--nj-canvas)] text-[var(--nj-ink)]">
-      {/* Top Bar Contract: strictly 3 zones separated by gap-8 */}
+    <div className="min-h-screen w-full overflow-x-clip bg-[var(--nj-canvas)] text-[var(--nj-ink)]">
+      {/* Top Bar Contract: strictly 3 zones, zero horizontal overflow on mobile */}
       <header
-        className="sticky top-0 z-30 border-b border-[var(--nj-border)] backdrop-blur-sm"
+        className="sticky top-0 z-30 border-b border-[var(--nj-border)] backdrop-blur-md"
         style={{ backgroundColor: 'var(--nj-header-bg)' }}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-6 py-3.5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:gap-6 sm:px-6 lg:gap-8">
           <a
             href="#inicio"
-            className="inline-flex items-center gap-2.5 font-serif text-xl font-semibold tracking-tight text-[var(--nj-ink)] whitespace-nowrap shrink-0"
+            className="inline-flex min-w-0 items-center gap-2 font-serif text-base font-semibold tracking-tight text-[var(--nj-ink)] sm:gap-2.5 sm:text-xl"
           >
             <BrandLogoMark size="sm" />
-            <span>{churchInfo.displayName}</span>
+            <span className="truncate">{churchInfo.displayName}</span>
           </a>
 
           <nav className="hidden items-center gap-7 text-sm font-medium text-[var(--nj-ink-muted)] lg:flex" aria-label="Navegação principal">
@@ -137,9 +137,10 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
             <button
               type="button"
               onClick={() => onSwitchEnvironment('app', 'inicio')}
-              className="nj-btn-primary rounded-md px-4 py-2 text-sm whitespace-nowrap shrink-0"
+              className="nj-btn-primary rounded-lg px-3 py-2 text-xs whitespace-nowrap shrink-0 sm:px-4 sm:text-sm"
             >
-              Acessar NJ App
+              <span className="sm:hidden">NJ App</span>
+              <span className="hidden sm:inline">Acessar NJ App</span>
             </button>
           </div>
         </div>
@@ -147,17 +148,17 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
 
       <main>
         {/* Institutional Hero */}
-        <section id="inicio" className="mx-auto max-w-7xl px-6 pt-12 pb-10 lg:pt-16">
-          <div className="grid grid-cols-1 items-stretch gap-10 lg:grid-cols-12">
-            <div className="flex flex-col justify-between lg:col-span-6">
+        <section id="inicio" className="mx-auto max-w-7xl px-4 pt-9 pb-10 sm:px-6 lg:pt-16">
+          <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-12 lg:gap-10">
+            <div className="flex min-w-0 flex-col justify-between lg:col-span-6">
               <div>
-                <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
+                <p className="text-xs font-semibold tracking-widest uppercase text-[var(--nj-accent-text)]">
                   {churchInfo.officialName} · Desde {churchInfo.foundedDate}
                 </p>
-                <h1 className="mt-4 font-serif text-4xl leading-[1.08] font-semibold tracking-tight text-[var(--nj-ink)] sm:text-5xl">
+                <h1 className="mt-3.5 font-serif text-3xl leading-[1.1] font-semibold tracking-tight text-[var(--nj-ink)] sm:mt-4 sm:text-5xl">
                   Uma igreja acolhedora, bíblica e em constante renovação espiritual.
                 </h1>
-                <p className="mt-5 max-w-xl text-sm leading-relaxed text-[var(--nj-ink-muted)] sm:text-base">
+                <p className="mt-4 max-w-xl text-sm leading-relaxed text-[var(--nj-ink-muted)] sm:mt-5 sm:text-base">
                   Bem-vindo à plataforma oficial da <strong>{churchInfo.displayName}</strong> no Rio de Janeiro. Acompanhe nossos cultos, inscreva-se nas programações, estude pela EBD Digital, ouça o Ministério Nova Jerusalém e gerencie as escalas ministeriais.
                 </p>
 
@@ -213,21 +214,21 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
               )}
             </div>
 
-            <div className="lg:col-span-6">
-              <div className="relative flex h-full min-h-[340px] flex-col justify-end overflow-hidden rounded-xl border border-[var(--nj-border)]">
+            <div className="min-w-0 lg:col-span-6">
+              <div className="relative flex h-full min-h-[340px] flex-col justify-end overflow-hidden rounded-2xl border border-[var(--nj-border)] bg-[#0A3B2C] shadow-[var(--nj-shadow-md)]">
                 <SanctuaryArchitectureArt className="absolute inset-0 h-full w-full" />
-                <div className="relative z-10 bg-gradient-to-t from-[#213228]/95 via-[#213228]/60 to-transparent p-7 text-[#F3F1E9]">
-                  <div className="mb-4 flex items-center gap-3">
+                <div className="relative z-10 bg-gradient-to-t from-[#083326]/95 via-[#0A3B2C]/75 to-transparent p-5 pt-16 text-white sm:p-7 sm:pt-20">
+                  <div className="mb-3.5 flex items-center gap-3">
                     <BrandLogoMark size="md" />
-                    <div>
-                      <p className="text-xs tracking-widest uppercase text-[#B1D3AE]">Próximo Culto</p>
-                      <p className="text-xs text-[#F3F1E9]/80">{churchInfo.address} · {churchInfo.neighborhood}</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold tracking-widest uppercase text-[#A7F3D0]">Próximo Culto</p>
+                      <p className="truncate text-xs text-white/90">{churchInfo.address} · {churchInfo.neighborhood}</p>
                     </div>
                   </div>
-                  <p className="font-serif text-2xl font-semibold sm:text-3xl">
+                  <p className="font-serif text-2xl font-semibold text-white sm:text-3xl">
                     {events[0]?.title}
                   </p>
-                  <p className="mt-2 text-sm text-[#F3F1E9]/85 tabular-nums">
+                  <p className="mt-2 text-sm text-white/90 tabular-nums">
                     {events[0] ? `${formatDatePtBR(events[0].date)} · ${events[0].time} · ${events[0].location}` : ''}
                   </p>
                 </div>
@@ -270,28 +271,28 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
         </section>
 
         {/* 01. Conheça Nossa Igreja + Departamentos */}
-        <section id="conheca" className="mx-auto max-w-7xl px-6 py-14">
+        <section id="conheca" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14">
           <div className="flex flex-col justify-between gap-4 border-b border-[var(--nj-border)] pb-6 md:flex-row md:items-end">
             <div>
               <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
                 01. Conheça Nossa Igreja
               </p>
-              <h2 className="mt-2 font-serif text-3xl font-semibold text-[var(--nj-ink)]">
+              <h2 className="mt-2 font-serif text-2xl font-semibold text-[var(--nj-ink)] sm:text-3xl">
                 História, liderança pastoral e ministérios em ação
               </h2>
             </div>
             <button
               type="button"
               onClick={() => onSwitchEnvironment('app', 'igreja')}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--nj-accent-text)] hover:underline self-start md:self-auto whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--nj-accent-text)] hover:underline self-start md:self-auto"
             >
               Ver página institucional completa
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 shrink-0" />
             </button>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-12">
-            <div className="nj-card p-7 lg:col-span-5">
+          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+            <div className="nj-card p-5 sm:p-7 lg:col-span-5">
               <p className="text-xs font-medium text-[var(--nj-accent-text)]">
                 Fundação: {churchInfo.foundedDate} · Sampaio, Rio de Janeiro – RJ
               </p>
@@ -326,23 +327,23 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
         </section>
 
         {/* 02. Programação & Informativo NJ */}
-        <section className="mx-auto max-w-7xl px-6 py-10">
+        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
           <div className="flex flex-col justify-between gap-4 border-b border-[var(--nj-border)] pb-6 md:flex-row md:items-end">
             <div>
               <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
                 02. Programação & Informativo NJ
               </p>
-              <h2 className="mt-2 font-serif text-3xl font-semibold text-[var(--nj-ink)]">
+              <h2 className="mt-2 font-serif text-2xl font-semibold text-[var(--nj-ink)] sm:text-3xl">
                 Vídeo semanal do Informativo NJ e eventos da semana
               </h2>
             </div>
             <button
               type="button"
               onClick={() => onSwitchEnvironment('app', 'agenda')}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--nj-accent-text)] hover:underline self-start md:self-auto whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--nj-accent-text)] hover:underline self-start md:self-auto"
             >
               Abrir Programação completa
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 shrink-0" />
             </button>
           </div>
 
@@ -390,19 +391,19 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
         </section>
 
         {/* 03. EBD Digital */}
-        <section id="ebd" className="border-y border-[var(--nj-border)] bg-[var(--nj-canvas-alt)] py-16">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-12">
-              <div className="lg:col-span-7">
+        <section id="ebd" className="border-y border-[var(--nj-border)] bg-[var(--nj-canvas-alt)] py-12 sm:py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
+              <div className="min-w-0 lg:col-span-7">
                 <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
                   03. EBD Digital — Domingos das 09h às 10h
                 </p>
-                <h2 className="mt-2 font-serif text-3xl font-semibold text-[var(--nj-ink)]">
+                <h2 className="mt-2 font-serif text-2xl font-semibold text-[var(--nj-ink)] sm:text-3xl">
                   Lições autorais da Nova Jerusalém para estudo durante toda a semana.
                 </h2>
 
                 {currentLesson && (
-                  <div className="nj-paper mt-6 p-7">
+                  <div className="nj-paper mt-6 p-5 sm:p-7">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--nj-paper-muted)] tabular-nums">
                       <span className="font-semibold text-[var(--nj-paper-ink)]">
                         Lição {String(currentLesson.number).padStart(2, '0')} em destaque
@@ -425,7 +426,7 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
                       <button
                         type="button"
                         onClick={() => onSwitchEnvironment('app', 'ebd')}
-                        className="inline-flex items-center gap-2 rounded-md bg-[#213228] px-4 py-2 text-sm font-medium text-[#F3F1E9] hover:bg-[#466053]"
+                        className="inline-flex items-center gap-2 rounded-lg bg-[#0F7656] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0B5E44]"
                       >
                         <BookOpen className="h-4 w-4" />
                         Ler lição online
@@ -436,7 +437,7 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
                           downloadEbdLessonPdf(currentLesson);
                           notify(`Download iniciado: ${currentLesson.pdfFileName}`);
                         }}
-                        className="inline-flex items-center gap-2 rounded-md border border-[#5D705D] px-4 py-2 text-sm font-medium text-[#213228] hover:bg-[#213228]/8"
+                        className="inline-flex items-center gap-2 rounded-lg border border-[#0F7656]/40 px-4 py-2 text-sm font-medium text-[#0C6B4E] transition hover:bg-[#0F7656]/10"
                       >
                         <Download className="h-4 w-4" />
                         Baixar PDF offline
@@ -446,7 +447,7 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
                 )}
               </div>
 
-              <div className="lg:col-span-5">
+              <div className="min-w-0 lg:col-span-5">
                 <h3 className="font-serif text-2xl font-semibold text-[var(--nj-ink)]">
                   Classes e Localização das Salas
                 </h3>
@@ -456,9 +457,9 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
                 <div className="mt-5 divide-y divide-[var(--nj-border)] border-y border-[var(--nj-border)]">
                   {ebdClasses.map((cls) => (
                     <div key={cls.id} className="py-4">
-                      <div className="flex items-baseline justify-between gap-4">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                         <p className="text-sm font-semibold text-[var(--nj-ink)]">{cls.name}</p>
-                        <span className="text-xs font-medium text-[var(--nj-accent-text)] whitespace-nowrap">
+                        <span className="text-xs font-medium text-[var(--nj-accent-text)]">
                           {cls.room} · {cls.floor}
                         </span>
                       </div>
@@ -474,8 +475,8 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
         </section>
 
         {/* 04. Min. Nova Jerusalém + Transmissões */}
-        <section id="musica" className="mx-auto max-w-7xl px-6 py-16">
-          <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
+        <section id="musica" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-6">
               <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
                 04. Min. Nova Jerusalém · Discografia 2001–2025
@@ -608,10 +609,10 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
         </section>
 
         {/* 06. Pedidos de Oração & Ofertas (Abertos a Membros e Visitantes) */}
-        <section className="border-t border-[var(--nj-border)] bg-[var(--nj-canvas-alt)] py-16">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-6 lg:grid-cols-12">
+        <section className="border-t border-[var(--nj-border)] bg-[var(--nj-canvas-alt)] py-12 sm:py-16">
+          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-12 lg:gap-10">
             {/* Ofertas & Dízimos — Aberto a Todos */}
-            <div className="nj-card space-y-5 p-7 lg:col-span-6">
+            <div className="nj-card min-w-0 space-y-5 p-5 sm:p-7 lg:col-span-6">
               <div>
                 <p className="text-xs font-medium tracking-widest uppercase text-[var(--nj-accent-text)]">
                   06. Dízimos e Ofertas · Membros e Visitantes
@@ -778,12 +779,12 @@ export const InstitutionalSite: React.FC<InstitutionalSiteProps> = ({ onSwitchEn
         className="border-t border-[var(--nj-border)] py-10"
         style={{ backgroundColor: 'var(--nj-footer-bg)' }}
       >
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-6 md:flex-row md:items-center">
-          <div className="flex items-center gap-3.5">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-4 sm:px-6 md:flex-row md:items-center">
+          <div className="flex min-w-0 items-start gap-3.5 sm:items-center">
             <BrandLogoMark size="md" />
-            <div>
-              <p className="font-serif text-lg font-semibold text-[var(--nj-ink)]">{churchInfo.officialName}</p>
-              <p className="mt-0.5 text-xs text-[var(--nj-ink-subtle)]">
+            <div className="min-w-0">
+              <p className="font-serif text-base font-semibold text-[var(--nj-ink)] sm:text-lg">{churchInfo.officialName}</p>
+              <p className="mt-0.5 break-words text-xs text-[var(--nj-ink-subtle)]">
                 {churchInfo.address}, {churchInfo.neighborhood}, {churchInfo.cityState} · CEP {churchInfo.cep} · Tel. {churchInfo.phonePrimary} · {churchInfo.email}
               </p>
             </div>

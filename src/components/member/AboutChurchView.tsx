@@ -66,9 +66,9 @@ export const AboutChurchView: React.FC = () => {
           </dl>
         </article>
 
-        <div className="relative flex min-h-[280px] flex-col justify-end overflow-hidden rounded-xl border border-[var(--nj-border)] lg:col-span-5">
+        <div className="relative flex min-h-[280px] flex-col justify-end overflow-hidden rounded-xl border border-[var(--nj-border)] bg-[#0A3B2C] lg:col-span-5">
           <SanctuaryArchitectureArt className="absolute inset-0 h-full w-full" />
-          <div className="relative z-10 bg-gradient-to-t from-[#213228]/95 via-[#213228]/60 to-transparent p-6 text-[#F3F1E9]">
+          <div className="relative z-10 bg-gradient-to-t from-[#083326]/95 via-[#0A3B2C]/70 to-transparent p-6 pt-14 text-white">
             <div className="flex items-center gap-3">
               <BrandLogoMark size="md" />
               <div>

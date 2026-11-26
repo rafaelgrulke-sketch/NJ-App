@@ -631,17 +631,17 @@ export const AdminPanel: React.FC<{
   }
 
   return (
-    <div className="min-h-screen bg-[var(--nj-canvas)] text-[var(--nj-ink)]">
+    <div className="min-h-screen w-full overflow-x-clip bg-[var(--nj-canvas)] text-[var(--nj-ink)]">
       {/* Strict 3-Zone Header */}
       <header className="sticky top-0 z-40 border-b border-[var(--nj-border)] bg-[var(--nj-header-bg)] backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 shrink-0">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <BrandLogoMark size="sm" />
-            <div className="leading-tight">
-              <p className="font-serif text-lg font-semibold whitespace-nowrap text-[var(--nj-ink)]">
+            <div className="min-w-0 leading-tight">
+              <p className="truncate font-serif text-base font-semibold text-[var(--nj-ink)] sm:text-lg">
                 Painel Administrativo
               </p>
-              <p className="text-[11px] whitespace-nowrap text-[var(--nj-ink-subtle)]">
+              <p className="truncate text-[11px] text-[var(--nj-ink-subtle)]">
                 {churchInfo.displayName}
               </p>
             </div>
@@ -667,9 +667,10 @@ export const AdminPanel: React.FC<{
           <button
             type="button"
             onClick={() => onSwitchEnvironment('app', 'inicio')}
-            className="nj-btn-primary rounded-md px-4 py-2 text-xs whitespace-nowrap shrink-0"
+            className="nj-btn-primary rounded-md px-3 py-2 text-xs whitespace-nowrap shrink-0 sm:px-4"
           >
-            Abrir NJ App
+            <span className="sm:hidden">NJ App</span>
+            <span className="hidden sm:inline">Abrir NJ App</span>
           </button>
         </div>
       </header>
@@ -677,12 +678,12 @@ export const AdminPanel: React.FC<{
       {/* Toolbar: Authenticated Identity + Server-Enforced RBAC + Theme + Sign Out */}
       <div className="border-b border-[var(--nj-border)] bg-[var(--nj-surface-alt)]">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            <div className="flex items-center gap-2 rounded-md border border-[var(--nj-border)] bg-[var(--nj-surface)] px-3 py-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-[var(--nj-accent-text)]" aria-hidden="true" />
-              <span className="font-semibold text-[var(--nj-ink)]">{authUser.email}</span>
-              <span className="text-[var(--nj-ink-subtle)]">·</span>
-              <span className="font-medium text-[var(--nj-accent-text)]">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs sm:gap-3">
+            <div className="flex max-w-full min-w-0 items-center gap-2 rounded-md border border-[var(--nj-border)] bg-[var(--nj-surface)] px-3 py-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[var(--nj-accent-text)]" aria-hidden="true" />
+              <span className="truncate font-semibold text-[var(--nj-ink)]">{authUser.email}</span>
+              <span className="shrink-0 text-[var(--nj-ink-subtle)]">·</span>
+              <span className="truncate font-medium text-[var(--nj-accent-text)]">
                 {PROFILE_LABELS[realRole]}
               </span>
             </div>

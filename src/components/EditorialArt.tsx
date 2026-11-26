@@ -19,7 +19,7 @@ export const BrandLogoMark: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: st
 
 export const SanctuaryArchitectureArt: React.FC<{ className?: string }> = ({ className = '' }) => (
   <div
-    className={`relative overflow-hidden bg-[#213228] text-[#F3F1E9] ${className}`}
+    className={`${className.includes('absolute') ? '' : 'relative '}overflow-hidden bg-[#0F7656] text-white ${className}`}
     aria-hidden="true"
   >
     <svg
@@ -30,29 +30,29 @@ export const SanctuaryArchitectureArt: React.FC<{ className?: string }> = ({ cla
     >
       <defs>
         <linearGradient id="njSanctuaryBg" x1="0" y1="0" x2="800" y2="540" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#213228" />
-          <stop offset="52%" stopColor="#354C40" />
-          <stop offset="100%" stopColor="#466053" />
+          <stop offset="0%" stopColor="#0A5C43" />
+          <stop offset="50%" stopColor="#127F5D" />
+          <stop offset="100%" stopColor="#1EA179" />
         </linearGradient>
         <linearGradient id="njWarmOliveBeam" x1="180" y1="0" x2="620" y2="540" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#B1D3AE" stopOpacity="0.22" />
-          <stop offset="55%" stopColor="#716F56" stopOpacity="0.16" />
-          <stop offset="100%" stopColor="#213228" stopOpacity="0" />
+          <stop offset="0%" stopColor="#D1FAE5" stopOpacity="0.30" />
+          <stop offset="52%" stopColor="#6EE7B7" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#0A5C43" stopOpacity="0" />
         </linearGradient>
       </defs>
       <rect width="800" height="540" fill="url(#njSanctuaryBg)" />
       <polygon points="180,0 520,0 740,540 280,540" fill="url(#njWarmOliveBeam)" />
-      <path d="M100 540V230C100 130 180 60 280 60C380 60 460 130 460 230V540" stroke="#B1D3AE" strokeOpacity="0.28" strokeWidth="1.5" />
-      <path d="M220 540V250C220 155 295 90 390 90C485 90 560 155 560 250V540" stroke="#F3F1E9" strokeOpacity="0.18" strokeWidth="1.2" />
-      <path d="M350 540V270C350 180 420 120 510 120C600 120 670 180 670 270V540" stroke="#716F56" strokeOpacity="0.35" strokeWidth="1.2" />
-      <line x1="0" y1="110" x2="800" y2="110" stroke="#F3F1E9" strokeOpacity="0.07" />
-      <line x1="0" y1="190" x2="800" y2="190" stroke="#F3F1E9" strokeOpacity="0.06" />
-      <line x1="0" y1="420" x2="800" y2="420" stroke="#B1D3AE" strokeOpacity="0.22" />
-      <line x1="400" y1="138" x2="400" y2="372" stroke="#F3F1E9" strokeOpacity="0.92" strokeWidth="5" strokeLinecap="round" />
-      <line x1="336" y1="208" x2="464" y2="208" stroke="#F3F1E9" strokeOpacity="0.92" strokeWidth="5" strokeLinecap="round" />
-      <circle cx="400" cy="208" r="76" stroke="#B1D3AE" strokeOpacity="0.32" strokeWidth="1.2" />
-      <line x1="120" y1="468" x2="680" y2="468" stroke="#F3F1E9" strokeOpacity="0.15" strokeWidth="1.5" />
-      <line x1="70" y1="504" x2="730" y2="504" stroke="#B1D3AE" strokeOpacity="0.14" strokeWidth="1.5" />
+      <path d="M100 540V230C100 130 180 60 280 60C380 60 460 130 460 230V540" stroke="#A7F3D0" strokeOpacity="0.36" strokeWidth="1.6" />
+      <path d="M220 540V250C220 155 295 90 390 90C485 90 560 155 560 250V540" stroke="#FFFFFF" strokeOpacity="0.28" strokeWidth="1.4" />
+      <path d="M350 540V270C350 180 420 120 510 120C600 120 670 180 670 270V540" stroke="#A7F3D0" strokeOpacity="0.32" strokeWidth="1.3" />
+      <line x1="0" y1="110" x2="800" y2="110" stroke="#FFFFFF" strokeOpacity="0.10" />
+      <line x1="0" y1="190" x2="800" y2="190" stroke="#FFFFFF" strokeOpacity="0.09" />
+      <line x1="0" y1="420" x2="800" y2="420" stroke="#A7F3D0" strokeOpacity="0.30" />
+      <line x1="400" y1="138" x2="400" y2="372" stroke="#FFFFFF" strokeOpacity="0.96" strokeWidth="5.5" strokeLinecap="round" />
+      <line x1="336" y1="208" x2="464" y2="208" stroke="#FFFFFF" strokeOpacity="0.96" strokeWidth="5.5" strokeLinecap="round" />
+      <circle cx="400" cy="208" r="76" stroke="#A7F3D0" strokeOpacity="0.45" strokeWidth="1.5" />
+      <line x1="120" y1="468" x2="680" y2="468" stroke="#FFFFFF" strokeOpacity="0.18" strokeWidth="1.5" />
+      <line x1="70" y1="504" x2="730" y2="504" stroke="#A7F3D0" strokeOpacity="0.20" strokeWidth="1.5" />
     </svg>
   </div>
 );
@@ -67,17 +67,17 @@ export const AlbumCoverArt: React.FC<{
   const [imgFailed, setImgFailed] = React.useState(false);
 
   const palettes = [
-    { from: '#192920', via: '#2F4A3B', to: '#466053', accent: '#B1D3AE', motif: 'rays' },
-    { from: '#24352A', via: '#3E5344', to: '#716F56', accent: '#E4DFC8', motif: 'arch' },
-    { from: '#1D2C24', via: '#466053', to: '#283B30', accent: '#B1D3AE', motif: 'rings' },
-    { from: '#2B362C', via: '#5D705D', to: '#213228', accent: '#F3F1E9', motif: 'cross' },
-    { from: '#1A2720', via: '#344B3E', to: '#5D705D', accent: '#B1D3AE', motif: 'waves' },
-    { from: '#2E3B2F', via: '#716F56', to: '#213228', accent: '#F3F1E9', motif: 'horizon' },
-    { from: '#16251D', via: '#2C4738', to: '#466053', accent: '#B1D3AE', motif: 'vinyl' },
-    { from: '#26342A', via: '#4E6353', to: '#213228', accent: '#E4DFC8', motif: 'arch' },
-    { from: '#1F3127', via: '#3B5446', to: '#716F56', accent: '#B1D3AE', motif: 'rays' },
-    { from: '#233227', via: '#5D705D', to: '#1D2C24', accent: '#F3F1E9', motif: 'rings' },
-    { from: '#1B2D23', via: '#466053', to: '#716F56', accent: '#B1D3AE', motif: 'waves' },
+    { from: '#0B5E44', via: '#12815F', to: '#1FA078', accent: '#FDE68A', motif: 'rays' },
+    { from: '#0E6B50', via: '#178A68', to: '#B47B2B', accent: '#FEF3C7', motif: 'arch' },
+    { from: '#0F6258', via: '#168779', to: '#0D5C46', accent: '#A7F3D0', motif: 'rings' },
+    { from: '#12694E', via: '#238F6D', to: '#0B543D', accent: '#FFFFFF', motif: 'cross' },
+    { from: '#0C6A5B', via: '#1A8C7A', to: '#28A68E', accent: '#D1FAE5', motif: 'waves' },
+    { from: '#16654B', via: '#B47B2B', to: '#0F6047', accent: '#FEF3C7', motif: 'horizon' },
+    { from: '#0A5A46', via: '#148266', to: '#1D9C7B', accent: '#A7F3D0', motif: 'vinyl' },
+    { from: '#116852', via: '#1F8B70', to: '#0D523E', accent: '#FDE68A', motif: 'arch' },
+    { from: '#0F6E54', via: '#1B9472', to: '#B47B2B', accent: '#FEF3C7', motif: 'rays' },
+    { from: '#126456', via: '#1D8A76', to: '#0C5242', accent: '#FFFFFF', motif: 'rings' },
+    { from: '#0B634A', via: '#178767', to: '#C47D1D', accent: '#FEF3C7', motif: 'waves' },
   ];
   const p = palettes[Math.abs(variant) % palettes.length];
 

@@ -147,21 +147,21 @@ export const MemberApp: React.FC<{
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--nj-canvas)] text-[var(--nj-ink)]">
+    <div className="min-h-screen w-full overflow-x-clip bg-[var(--nj-canvas)] text-[var(--nj-ink)]">
       {/* Strict 3-Zone Top Bar */}
       <header className="sticky top-0 z-40 border-b border-[var(--nj-border)] bg-[var(--nj-header-bg)] backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => navigate('inicio')}
-            className="flex items-center gap-3 text-left shrink-0"
+            className="flex min-w-0 items-center gap-2.5 text-left sm:gap-3"
           >
             <BrandLogoMark size="sm" />
-            <div className="leading-tight">
-              <p className="font-serif text-lg font-semibold whitespace-nowrap text-[var(--nj-ink)]">
+            <div className="min-w-0 leading-tight">
+              <p className="truncate font-serif text-base font-semibold text-[var(--nj-ink)] sm:text-lg">
                 NJ App
               </p>
-              <p className="text-[11px] whitespace-nowrap text-[var(--nj-ink-subtle)]">
+              <p className="truncate text-[11px] text-[var(--nj-ink-subtle)]">
                 {churchInfo.displayName}
               </p>
             </div>
@@ -187,7 +187,7 @@ export const MemberApp: React.FC<{
           <button
             type="button"
             onClick={() => onSwitchEnvironment('site')}
-            className="nj-btn-secondary rounded-md px-3.5 py-2 text-xs whitespace-nowrap shrink-0"
+            className="nj-btn-secondary rounded-md px-3 py-2 text-xs whitespace-nowrap shrink-0 sm:px-3.5"
           >
             Site Oficial
           </button>

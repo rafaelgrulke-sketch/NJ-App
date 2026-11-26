@@ -203,7 +203,7 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
               <button
                 type="button"
                 onClick={() => onNavigate('ebd')}
-                className="inline-flex items-center gap-2 rounded-md bg-[#213228] px-4 py-2 text-xs font-semibold text-[#F3F1E9] transition hover:bg-[#31483B]"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#0F7656] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#0B5E44]"
               >
                 <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
                 Ler online
@@ -214,7 +214,7 @@ export const MemberHomeView: React.FC<{ onNavigate: (tab: MemberTab) => void }> 
                   downloadEbdLessonPdf(currentLesson);
                   notify(`PDF "${currentLesson.pdfFileName}" baixado.`);
                 }}
-                className="inline-flex items-center gap-2 rounded-md border border-[#213228]/30 bg-transparent px-4 py-2 text-xs font-semibold text-[#213228] transition hover:bg-[#213228]/10"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#0F7656]/35 bg-transparent px-4 py-2 text-xs font-semibold text-[#0C6B4E] transition hover:bg-[#0F7656]/10"
               >
                 <Download className="h-3.5 w-3.5" aria-hidden="true" />
                 Baixar PDF
@@ -595,9 +595,9 @@ export const AgendaInformativoView: React.FC = () => {
 
       {/* Calendar View */}
       {viewMode === 'calendario' && (
-        <section className="nj-card p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl font-semibold capitalize text-[var(--nj-ink)]">
+        <section className="nj-card p-3 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-lg font-semibold capitalize text-[var(--nj-ink)] sm:text-xl">
               {calendarBase.label}
             </h2>
             <span className="text-xs text-[var(--nj-ink-subtle)] tabular-nums">
@@ -605,7 +605,7 @@ export const AgendaInformativoView: React.FC = () => {
             </span>
           </div>
 
-          <div className="mt-4 grid grid-cols-7 gap-2 text-center text-xs font-medium text-[var(--nj-ink-subtle)]">
+          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-[var(--nj-ink-subtle)] sm:gap-2 sm:text-xs">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((d) => (
               <div key={d} className="py-1">
                 {d}
@@ -613,11 +613,11 @@ export const AgendaInformativoView: React.FC = () => {
             ))}
           </div>
 
-          <div className="mt-1 grid grid-cols-7 gap-2">
+          <div className="mt-1 grid grid-cols-7 gap-1 sm:gap-2">
             {Array.from({ length: calendarBase.startOffset }).map((_, idx) => (
               <div
                 key={`empty-${idx}`}
-                className="min-h-[76px] rounded-lg bg-[var(--nj-surface-alt)]/40"
+                className="min-h-[54px] rounded-lg bg-[var(--nj-surface-alt)]/50 sm:min-h-[76px]"
               />
             ))}
             {Array.from({ length: calendarBase.daysInMonth }).map((_, idx) => {
@@ -627,13 +627,13 @@ export const AgendaInformativoView: React.FC = () => {
               return (
                 <div
                   key={iso}
-                  className={`min-h-[76px] rounded-lg border p-2 ${
+                  className={`min-h-[54px] min-w-0 rounded-lg border p-1 sm:min-h-[76px] sm:p-2 ${
                     dayEvents.length > 0
                       ? 'border-[var(--nj-border-strong)] bg-[var(--nj-surface-alt)]'
                       : 'border-[var(--nj-border)]'
                   }`}
                 >
-                  <p className="font-mono text-xs text-[var(--nj-ink-subtle)] tabular-nums">
+                  <p className="font-mono text-[11px] text-[var(--nj-ink-subtle)] tabular-nums sm:text-xs">
                     {day}
                   </p>
                   <div className="mt-1 space-y-1">
@@ -642,7 +642,7 @@ export const AgendaInformativoView: React.FC = () => {
                         key={ev.id}
                         type="button"
                         onClick={() => setSelectedEvent(ev)}
-                        className="block w-full truncate rounded bg-[#B1D3AE]/25 px-1.5 py-0.5 text-left text-[11px] font-medium text-[var(--nj-ink)] hover:bg-[#B1D3AE]/40"
+                        className="block w-full truncate rounded bg-[var(--nj-accent-soft)] px-1 py-0.5 text-left text-[10px] font-medium text-[var(--nj-accent-text)] hover:opacity-85 sm:px-1.5 sm:text-[11px]"
                         title={`${ev.title} (${ev.time})`}
                       >
                         {ev.time} {ev.title}
@@ -817,7 +817,7 @@ export const EbdDigitalView: React.FC = () => {
                 </ol>
               </section>
 
-              <section className="mt-6 rounded-lg bg-[#213228] p-5 text-[#F3F1E9]">
+              <section className="mt-6 rounded-xl bg-[#0F7656] p-5 text-white">
                 <p className="text-xs font-medium tracking-widest uppercase text-[#B1D3AE]">
                   Aplicação Prática da Semana
                 </p>

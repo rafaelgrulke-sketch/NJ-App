@@ -18,132 +18,134 @@
 }
 
 /* ============================================================================
-   DESIGN SYSTEM TOKENS — LIGHT MODE
-   60% Neutral Canvas (#F3F1E9) · 30% Structural Surfaces · 10% Brand Accent
+   DESIGN SYSTEM TOKENS — LIGHT MODE (DEFAULT)
+   60% Soft Light Canvas (#F8F9F8) · 30% Crisp White Surfaces · 10% Vibrant Emerald (#0F7656)
    ============================================================================ */
 :root {
   color-scheme: light;
 
   /* Surfaces */
-  --nj-canvas: #F3F1E9;
-  --nj-canvas-alt: #EAE6DA;
+  --nj-canvas: #F8F9F8;
+  --nj-canvas-alt: #F1F4F2;
   --nj-surface: #FFFFFF;
-  --nj-surface-alt: #F6F4EC;
+  --nj-surface-alt: #F5F7F6;
   --nj-surface-elevated: #FFFFFF;
-  --nj-surface-muted: #E7E3D7;
-  --nj-surface-gradient: linear-gradient(160deg, #FFFFFF 0%, #F9F8F3 100%);
-  --nj-surface-olive-gradient: linear-gradient(145deg, rgba(177, 211, 174, 0.24) 0%, rgba(113, 111, 86, 0.12) 100%);
-  --nj-header-bg: rgba(243, 241, 233, 0.92);
-  --nj-footer-bg: #E8E4D8;
+  --nj-surface-muted: #E9EEEB;
+  --nj-surface-gradient: linear-gradient(160deg, #FFFFFF 0%, #FAFBFA 100%);
+  --nj-surface-olive-gradient: linear-gradient(145deg, rgba(15, 118, 86, 0.08) 0%, rgba(217, 155, 38, 0.07) 100%);
+  --nj-header-bg: rgba(255, 255, 255, 0.94);
+  --nj-footer-bg: #EDF1EE;
   --nj-input-bg: #FFFFFF;
 
   /* Typography Ink */
-  --nj-ink: #1B2921;
-  --nj-ink-muted: #40574B;
-  --nj-ink-subtle: #5B6E5B;
+  --nj-ink: #112620;
+  --nj-ink-muted: #3A534B;
+  --nj-ink-subtle: #596E67;
 
   /* Borders */
-  --nj-border: rgba(70, 96, 83, 0.18);
-  --nj-border-strong: rgba(70, 96, 83, 0.36);
+  --nj-border: rgba(15, 118, 86, 0.13);
+  --nj-border-strong: rgba(15, 118, 86, 0.28);
 
-  /* Interactive Accents */
-  --nj-accent: #213228;
-  --nj-accent-hover: #31493B;
-  --nj-accent-active: #16221B;
-  --nj-accent-ink: #F3F1E9;
-  --nj-accent-text: #355243;
-  --nj-highlight: #716F56;
+  /* Interactive Accents — Vibrant Professional Emerald */
+  --nj-accent: #0F7656;
+  --nj-accent-hover: #0B5E44;
+  --nj-accent-active: #084935;
+  --nj-accent-ink: #FFFFFF;
+  --nj-accent-text: #0A5C43;
+  --nj-accent-soft: rgba(15, 118, 86, 0.10);
+  --nj-highlight: #B4741B;
 
-  /* Event Category Badge (Confirmed: Verde-sálvia & Verde-floresta) */
-  --nj-badge-bg: #B1D3AE;
-  --nj-badge-ink: #1A2920;
+  /* Event Category Badge */
+  --nj-badge-bg: #0F7656;
+  --nj-badge-ink: #FFFFFF;
 
   /* High-Contrast EBD Paper Reading Surface */
   --nj-paper-bg: #FFFFFF;
-  --nj-paper-ink: #1D2C23;
-  --nj-paper-muted: #466053;
+  --nj-paper-ink: #102A22;
+  --nj-paper-muted: #3A5A4E;
 
   /* Semantic Status Tokens (Always paired with icon/label) */
-  --nj-success: #256343;
-  --nj-success-bg: rgba(37, 99, 67, 0.10);
-  --nj-warning: #9A5B13;
-  --nj-warning-bg: rgba(154, 91, 19, 0.11);
-  --nj-danger: #B42318;
-  --nj-danger-bg: rgba(180, 35, 24, 0.10);
-  --nj-info: #2D5A4B;
-  --nj-info-bg: rgba(45, 90, 75, 0.10);
+  --nj-success: #0F7656;
+  --nj-success-bg: rgba(16, 185, 129, 0.12);
+  --nj-warning: #B45309;
+  --nj-warning-bg: rgba(245, 158, 11, 0.13);
+  --nj-danger: #B91C1C;
+  --nj-danger-bg: rgba(220, 38, 38, 0.10);
+  --nj-info: #0D7490;
+  --nj-info-bg: rgba(14, 116, 144, 0.10);
 
   /* Standardized Radii, Shadows & Motion */
   --nj-radius-sm: 0.5rem;
   --nj-radius-md: 0.75rem;
   --nj-radius-lg: 1rem;
   --nj-radius-xl: 1.25rem;
-  --nj-shadow-sm: 0 1px 2px rgba(27, 41, 33, 0.06);
-  --nj-shadow-md: 0 8px 24px -8px rgba(27, 41, 33, 0.10);
-  --nj-shadow-lg: 0 20px 44px -16px rgba(27, 41, 33, 0.18);
-  --nj-ring: 0 0 0 2px var(--nj-canvas), 0 0 0 4px #466053;
+  --nj-shadow-sm: 0 2px 6px rgba(16, 42, 34, 0.05);
+  --nj-shadow-md: 0 10px 28px -10px rgba(15, 118, 86, 0.14);
+  --nj-shadow-lg: 0 22px 46px -16px rgba(16, 42, 34, 0.16);
+  --nj-ring: 0 0 0 2px var(--nj-canvas), 0 0 0 4px #10B981;
   --nj-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --nj-duration-fast: 150ms;
   --nj-duration-base: 200ms;
 }
 
 /* ============================================================================
-   DESIGN SYSTEM TOKENS — DARK MODE
-   Verde-floresta (#213228) Dominant Canvas · Optical Compensation Active
+   DESIGN SYSTEM TOKENS — DARK MODE (OPTIONAL VIA TOGGLE)
+   Refined Deep Emerald-Slate Canvas with Luminous Mint-Emerald Accents
    ============================================================================ */
 .dark {
   color-scheme: dark;
 
-  --nj-canvas: #1D2C23;
-  --nj-canvas-alt: #17241C;
-  --nj-surface: #25382D;
-  --nj-surface-alt: #1F3026;
-  --nj-surface-elevated: #2B4034;
-  --nj-surface-muted: #19271F;
-  --nj-surface-gradient: linear-gradient(160deg, rgba(64, 90, 76, 0.42) 0%, rgba(29, 44, 35, 0.96) 100%);
-  --nj-surface-olive-gradient: linear-gradient(145deg, rgba(113, 111, 86, 0.28) 0%, rgba(70, 96, 83, 0.32) 55%, rgba(29, 44, 35, 0.96) 100%);
-  --nj-header-bg: rgba(29, 44, 35, 0.92);
-  --nj-footer-bg: #15211A;
-  --nj-input-bg: #16231B;
+  --nj-canvas: #13231D;
+  --nj-canvas-alt: #0F1C17;
+  --nj-surface: #1B3128;
+  --nj-surface-alt: #162921;
+  --nj-surface-elevated: #223C32;
+  --nj-surface-muted: #14251E;
+  --nj-surface-gradient: linear-gradient(160deg, rgba(34, 66, 54, 0.72) 0%, rgba(21, 39, 32, 0.96) 100%);
+  --nj-surface-olive-gradient: linear-gradient(145deg, rgba(16, 185, 129, 0.18) 0%, rgba(245, 158, 11, 0.14) 55%, rgba(21, 39, 32, 0.96) 100%);
+  --nj-header-bg: rgba(19, 35, 29, 0.92);
+  --nj-footer-bg: #0E1B16;
+  --nj-input-bg: #11201A;
 
-  --nj-ink: #F3F1E9;
-  --nj-ink-muted: rgba(243, 241, 233, 0.80);
-  --nj-ink-subtle: rgba(243, 241, 233, 0.62);
+  --nj-ink: #F3F8F5;
+  --nj-ink-muted: rgba(243, 248, 245, 0.82);
+  --nj-ink-subtle: rgba(243, 248, 245, 0.64);
 
-  --nj-border: rgba(177, 211, 174, 0.16);
-  --nj-border-strong: rgba(177, 211, 174, 0.34);
+  --nj-border: rgba(52, 211, 153, 0.18);
+  --nj-border-strong: rgba(52, 211, 153, 0.36);
 
-  --nj-accent: #B1D3AE;
-  --nj-accent-hover: #C2DFC0;
-  --nj-accent-active: #9BC497;
-  --nj-accent-ink: #1B2921;
-  --nj-accent-text: #B1D3AE;
-  --nj-highlight: #B1D3AE;
+  --nj-accent: #34D399;
+  --nj-accent-hover: #6EE7B7;
+  --nj-accent-active: #10B981;
+  --nj-accent-ink: #0A2018;
+  --nj-accent-text: #6EE7B7;
+  --nj-accent-soft: rgba(52, 211, 153, 0.16);
+  --nj-highlight: #FBBF24;
 
-  --nj-badge-bg: #B1D3AE;
-  --nj-badge-ink: #1B2921;
+  --nj-badge-bg: #34D399;
+  --nj-badge-ink: #0A2018;
 
-  --nj-paper-bg: #F3F1E9;
-  --nj-paper-ink: #1D2C23;
-  --nj-paper-muted: #466053;
+  --nj-paper-bg: #F6FAF8;
+  --nj-paper-ink: #102A22;
+  --nj-paper-muted: #3A5A4E;
 
-  --nj-success: #8FD49E;
-  --nj-success-bg: rgba(143, 212, 158, 0.14);
-  --nj-warning: #F5B971;
-  --nj-warning-bg: rgba(245, 185, 113, 0.14);
-  --nj-danger: #F28B82;
-  --nj-danger-bg: rgba(242, 139, 130, 0.14);
-  --nj-info: #B1D3AE;
-  --nj-info-bg: rgba(177, 211, 174, 0.14);
+  --nj-success: #6EE7B7;
+  --nj-success-bg: rgba(52, 211, 153, 0.15);
+  --nj-warning: #FBBF24;
+  --nj-warning-bg: rgba(251, 191, 36, 0.15);
+  --nj-danger: #FCA5A5;
+  --nj-danger-bg: rgba(248, 113, 113, 0.15);
+  --nj-info: #6EE7B7;
+  --nj-info-bg: rgba(52, 211, 153, 0.15);
 
   --nj-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
   --nj-shadow-md: 0 12px 28px -10px rgba(0, 0, 0, 0.42);
   --nj-shadow-lg: 0 24px 52px -16px rgba(0, 0, 0, 0.58);
-  --nj-ring: 0 0 0 2px var(--nj-canvas), 0 0 0 4px #B1D3AE;
+  --nj-ring: 0 0 0 2px var(--nj-canvas), 0 0 0 4px #34D399;
 }
 
 /* ============================================================================
-   BASE TYPOGRAPHY & FLUID H1–H6 HIERARCHY (SORA + INTER)
+   BASE TYPOGRAPHY, FLUID H1–H6 HIERARCHY & STRICT VERTICAL MOBILE FLOW
    ============================================================================ */
 @layer base {
   html {
@@ -151,6 +153,8 @@
     scroll-behavior: smooth;
     background-color: var(--nj-canvas);
     color: var(--nj-ink);
+    max-width: 100%;
+    overflow-x: clip;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -160,8 +164,19 @@
     color: var(--nj-ink);
     font-size: clamp(0.9375rem, 0.9rem + 0.15vw, 1rem);
     line-height: 1.6;
+    max-width: 100%;
+    overflow-x: clip;
     transition: background-color var(--nj-duration-base) var(--nj-ease),
       color var(--nj-duration-base) var(--nj-ease);
+  }
+
+  #root {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  img, svg, video, iframe {
+    max-width: 100%;
   }
 
   .dark body {
@@ -355,8 +370,10 @@
 
 .nj-tabs {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
+  max-width: 100%;
   background-color: var(--nj-surface-muted);
   border: 1px solid var(--nj-border);
   border-radius: var(--nj-radius-md);

@@ -94,7 +94,7 @@ import {
   sanitizeText,
 } from '../utils/security';
 
-const THEME_KEY = 'nj_sampaio_theme_v2';
+const THEME_KEY = 'nj_sampaio_theme_v3';
 
 export interface NotificationPreferences {
   escala: boolean;
@@ -230,7 +230,7 @@ export const ChurchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch {
       // ignore
     }
-    return 'dark';
+    return 'light';
   });
 
   // Firebase Auth from dedicated AuthContext

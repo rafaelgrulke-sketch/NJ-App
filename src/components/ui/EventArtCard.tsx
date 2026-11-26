@@ -60,7 +60,7 @@ export const EventArtCard: React.FC<EventArtCardProps> = ({ event, onSelect, com
       className="group flex cursor-pointer flex-col text-left focus-visible:rounded-2xl"
     >
       {/* Artwork Container (16:10) */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-[var(--nj-border)] bg-[#1B2A21] shadow-[var(--nj-shadow-sm)] transition-all duration-200 group-hover:border-[var(--nj-border-strong)] group-hover:shadow-[var(--nj-shadow-md)]">
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-[var(--nj-border)] bg-[#EAF3EE] shadow-[var(--nj-shadow-sm)] transition-all duration-200 group-hover:border-[var(--nj-border-strong)] group-hover:shadow-[var(--nj-shadow-md)]">
         {validArtwork ? (
           <img
             src={validArtwork}
@@ -71,10 +71,10 @@ export const EventArtCard: React.FC<EventArtCardProps> = ({ event, onSelect, com
             className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#2C4236] via-[#213228] to-[#16231B] p-6 text-center text-[#F3F1E9]">
-            <Sparkles className="h-7 w-7 text-[#B1D3AE]" aria-hidden="true" />
+          <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#0F7656] via-[#158C68] to-[#0B5A42] p-6 text-center text-white">
+            <Sparkles className="h-7 w-7 text-[#FDE68A]" aria-hidden="true" />
             <p className="mt-2 font-display text-base font-semibold">{event.title}</p>
-            <p className="mt-1 text-xs text-[#F3F1E9]/70">Nova Jerusalém Sampaio</p>
+            <p className="mt-1 text-xs text-white/80">Nova Jerusalém Sampaio</p>
           </div>
         )}
 
